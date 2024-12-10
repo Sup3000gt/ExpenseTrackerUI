@@ -9,9 +9,10 @@ class MessageView(QWidget):
         # Display the message
         self.message_label = QLabel(message)
         self.layout.addWidget(self.message_label)
+        self.message_label.setStyleSheet("font-size: 18px; color: #333; text-align: center;")
 
         # Add a Logout button (if applicable)
-        self.logout_button = QPushButton("Logout")
+        self.logout_button = QPushButton("Back to Main Page")
         self.logout_button.clicked.connect(self.logout_user)
         self.layout.addWidget(self.logout_button)
 
