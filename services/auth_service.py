@@ -1,12 +1,11 @@
 import requests
-
-LOGIN_API_URL = "https://expenseuserserviceapi.azure-api.net/api/Users/login"
-SUBSCRIPTION_KEY = "49630d64dd954e64b06992eade60a44e"
+from appconfig import USER_BASE_API_URL, SUBSCRIPTION_KEY
 
 def login_user(username, password):
     """
     Perform user login and return success status, message, and token.
     """
+    api_url = f"{USER_BASE_API_URL}/Users/login"
     headers = {
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY  # Include the subscription key
@@ -18,7 +17,7 @@ def login_user(username, password):
         print(f"Sending payload: {payload}")
         print(f"Headers: {headers}")
 
-        response = requests.post(LOGIN_API_URL, headers=headers, json=payload)
+        response = requests.post(api_url, headers=headers, json=payload)
 
         # Log the response for debugging
         print(f"Response Status Code: {response.status_code}")

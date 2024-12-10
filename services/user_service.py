@@ -1,5 +1,5 @@
 import requests
-from appconfig import BASE_API_URL, SUBSCRIPTION_KEY
+from appconfig import USER_BASE_API_URL, SUBSCRIPTION_KEY
 
 def register_user(data):
     """
@@ -11,7 +11,7 @@ def register_user(data):
     Returns:
         tuple: (success: bool, message: str)
     """
-    api_url = f"{BASE_API_URL}/Users/register"
+    api_url = f"{USER_BASE_API_URL}/Users/register"
     headers = {
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY
