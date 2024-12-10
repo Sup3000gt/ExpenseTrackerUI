@@ -2,6 +2,39 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QLab
 from PySide6.QtCore import Qt
 import requests
 from appconfig import USER_BASE_API_URL, USER_SERVICE_SUBSCRIPTION_KEY
+from PySide6.QtCore import QThread, Signal
+import os
+from PySide6.QtGui import QMovie
+
+class PasswordResetThread(QThread):
+    """Thread for handling the password reset API call."""
+    reset_result = Signal(bool, str)
+
+    def __init__(self, username, email):
+        super().__init__()
+        self.username = username
+        self.email = email
+
+    def run(self):
+        """Send username and email to the password reset API."""
+        api_url = f"{USER_BASE_API_URL}/Users/request-password-reset"
+        headers = {
+            "Content-Type": "application/json",
+            "Ocp-Apim-Subscription-Key": USER_SERVICE_SUBSCRIPTION_KEY
+        }
+        payload = {
+            "username": self.username,
+            "email": self.email
+        }
+
+        try:
+            response = requests.post(api_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                self.reset_result.emit(True, "Password reset request successful. Please check your email.")
+            else:
+                self.reset_result.emit(False, f"Error: {response.text}")
+        except requests.exceptions.RequestException as e:
+            self.reset_result.emit(False, f"Error: {e}")
 
 class ForgotPasswordView(QWidget):
     def __init__(self, parent):
@@ -41,7 +74,7 @@ class ForgotPasswordView(QWidget):
         self.layout.addWidget(self.feedback_label)
 
     def request_password_reset(self):
-        """Send username and email to the password reset API."""
+        """Handle password reset with a loading spinner."""
         username = self.username_input.text().strip()
         email = self.email_input.text().strip()
 
@@ -49,26 +82,52 @@ class ForgotPasswordView(QWidget):
             self.feedback_label.setText("Username and email cannot be empty.")
             return
 
-        # Ensure payload is properly constructed
-        payload = {
-            "username": username,
-            "email": email
-        }
+        # Show spinner on the button
+        self.show_loading_animation_on_button()
 
-        print(payload)  # Debugging step
+        # Start the password reset thread
+        self.reset_thread = PasswordResetThread(username, email)
+        self.reset_thread.reset_result.connect(self.on_reset_result)  # Connect the result signal
+        self.reset_thread.start()
 
-        # API endpoint
-        api_url = "https://expenseuserserviceapi.azure-api.net/api/Users/request-password-reset"
-        headers = {
-            "Content-Type": "application/json",
-            "Ocp-Apim-Subscription-Key": USER_SERVICE_SUBSCRIPTION_KEY
-        }
+    def on_reset_result(self, success, message):
+        """Handle the result of the password reset API call."""
+        self.hide_loading_animation_on_button()
 
-        try:
-            response = requests.post(api_url, headers=headers, json=payload)
-            if response.status_code == 200:
-                self.parent.show_message_view("Password reset request successful. Please check your email.")
-            else:
-                self.feedback_label.setText(f"Failed to request password reset. Error: {response.text}")
-        except Exception as e:
-            self.feedback_label.setText(f"An error occurred: {e}")
+        if success:
+            self.parent.show_message_view(message)
+        else:
+            self.feedback_label.setText(message)
+
+    def show_loading_animation_on_button(self):
+        """Show a spinning icon on the Request Password Reset button."""
+        self.submit_button.setText("")
+        self.spinner_label = QLabel(self.submit_button)
+        self.spinner_label.setFixedSize(20, 20)  # Set spinner size
+        self.spinner_label.setAlignment(Qt.AlignCenter)
+
+        # Position the spinner inside the button
+        self.spinner_label.move(
+            (self.submit_button.width() // 2) - 10,  # Center horizontally
+            (self.submit_button.height() // 2) - 10  # Center vertically
+        )
+
+        # Load and start the spinner animation
+        spinner_path = os.path.join(os.getcwd(), "assets", "spinner.gif")
+        self.spinner_movie = QMovie(spinner_path)
+        self.spinner_label.setMovie(self.spinner_movie)
+        self.spinner_movie.start()
+        self.spinner_label.show()
+
+        # Disable the button to prevent multiple clicks
+        self.submit_button.setDisabled(True)
+
+    def hide_loading_animation_on_button(self):
+        """Remove the spinning icon from the Request Password Reset button."""
+        if hasattr(self, "spinner_label") and self.spinner_label:
+            self.spinner_movie.stop()
+            self.spinner_label.deleteLater()
+            self.spinner_label = None
+
+        self.submit_button.setText("Request Password Reset")
+        self.submit_button.setDisabled(False)
