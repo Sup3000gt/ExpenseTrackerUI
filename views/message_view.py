@@ -6,9 +6,13 @@ class MessageView(QWidget):
         super().__init__()
         self.parent = parent
         self.layout = QVBoxLayout(self)
-        self.layout.setAlignment(Qt.AlignCenter)  # Align everything to the center
+        self.layout.setContentsMargins(20, 20, 20, 20)  # Optional margins for better spacing
+        self.layout.setAlignment(Qt.AlignCenter)  # Center the content overall
 
-        # Display the message in the center
+        # Spacer above the label to push it down when needed
+        self.layout.addSpacerItem(QSpacerItem(10, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # Centered label
         self.message_label = QLabel(message)
         self.message_label.setWordWrap(True)
         self.message_label.setAlignment(Qt.AlignCenter)
@@ -24,7 +28,10 @@ class MessageView(QWidget):
         """)
         self.layout.addWidget(self.message_label, alignment=Qt.AlignCenter)
 
-        # Add a button at the bottom to return to the main page
+        # Spacer below the label to push the button down
+        self.layout.addSpacerItem(QSpacerItem(10, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        # Button stuck to the bottom
         self.return_button = QPushButton("Back to Main Page")
         self.return_button.clicked.connect(self.return_to_main_page)
         self.return_button.setStyleSheet("""
