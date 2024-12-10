@@ -1,6 +1,25 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton
 from services.auth_service import login_user
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel
+from PySide6.QtGui import QMovie
+from PySide6.QtCore import QThread, Signal
+import os
+from PySide6.QtGui import QPixmap
+
+
+class LoginThread(QThread):
+    login_result = Signal(bool, str, str)  # Signal to send (success, message, token)
+
+    def __init__(self, username, password):
+        super().__init__()
+        self.username = username
+        self.password = password
+
+    def run(self):
+        """Run the API call in a separate thread."""
+        success, message, token = login_user(self.username, self.password)
+        self.login_result.emit(success, message, token)
 
 class MainPage(QWidget):
     def __init__(self, parent):
@@ -11,10 +30,10 @@ class MainPage(QWidget):
         self.layout.setContentsMargins(40, 40, 40, 40)
 
         # Title with word wrapping
-        self.title_label = QLabel("Welcome to Expense Tracker")
+        self.title_label = QLabel("Personal Expense Tracker")
         self.title_label.setAlignment(Qt.AlignCenter)  # Center-align horizontally
         self.title_label.setWordWrap(True)  # Enable word wrapping
-        self.title_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        self.title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #555; text-align: center;")
         self.layout.addWidget(self.title_label)
 
         # Username input
@@ -49,24 +68,82 @@ class MainPage(QWidget):
 
         # Feedback label
         self.feedback_label = QLabel("")
-        self.feedback_label.setStyleSheet("color: red; font-size: 14px;")
+        self.feedback_label.setStyleSheet("font-size: 18px; font-weight: bold; color: red; text-align: center;")
         self.layout.addWidget(self.feedback_label)
 
+        # Add Microsoft Icon
+        self.icon_label = QLabel(self)
+        pixmap = QPixmap("assets/microsoft3.png")
+        self.icon_label.setPixmap(pixmap.scaled(80, 80, Qt.KeepAspectRatio))  # Scale to fit
+        self.layout.addWidget(self.icon_label, alignment=Qt.AlignCenter)
+
+        # Add Text Below the Icon
+        self.text_label = QLabel("Microsoft Software and Systems Academy", self)
+        self.text_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #555; text-align: center;")
+        self.layout.addWidget(self.text_label, alignment=Qt.AlignCenter)
+
+
+
     def login_user(self):
-        """Handle user login."""
+        """Handle user login with a loading spinner on the button."""
         username = self.username_input.text().strip()
         password = self.password_input.text().strip()
 
         if not username or not password:
-            self.feedback_label.setText("Username and password cannot be empty.")
+            self.feedback_label.setText("Username or password cannot be empty.")
             return
 
-        # Call the login API
-        success, message, token = login_user(username, password)
+        # Show spinner on the Login button
+        self.show_loading_animation_on_button()
+
+        # Start the login thread
+        self.login_thread = LoginThread(username, password)
+        self.login_thread.login_result.connect(self.on_login_result)  # Connect the result signal
+        self.login_thread.start()
+
+    def on_login_result(self, success, message, token):
+        """Handle the result of the login API call."""
+        self.hide_loading_animation_on_button()
+
         if success:
             self.parent.jwt_token = token
-            self.feedback_label.setStyleSheet("color: green; font-size: 14px;")
-            self.feedback_label.setText("Login Successful!")
+            self.parent.show_message_view("Login Successful!")
         else:
-            self.feedback_label.setStyleSheet("color: red; font-size: 14px;")
-            self.feedback_label.setText(message)
+            self.feedback_label.setText("Invalid Username or password")
+
+    def show_loading_animation_on_button(self):
+        self.login_button.setText("")
+        """Show a spinning icon on the Login button."""
+        # Create a QLabel to hold the spinner
+        self.spinner_label = QLabel(self.login_button)
+        self.spinner_label.setFixedSize(20, 20)  # Set the size of the spinner
+        self.spinner_label.setAlignment(Qt.AlignCenter)
+
+        # Position the spinner inside the button
+        self.spinner_label.move(
+            (self.login_button.width() // 2) - 10,  # Center horizontally
+            (self.login_button.height() // 2) - 10  # Center vertically
+        )
+
+        # Load and start the spinner animation
+        spinner_path = os.path.join(os.getcwd(), "assets", "spinner.gif")
+        print(f"Spinner GIF Path: {spinner_path}")
+
+        self.spinner_movie = QMovie(spinner_path)
+        self.spinner_label.setMovie(self.spinner_movie)
+        self.spinner_movie.start()
+        self.spinner_label.show()
+
+        # Disable the button to prevent multiple clicks
+        self.login_button.setDisabled(True)
+
+    def hide_loading_animation_on_button(self):
+        """Remove the spinning icon from the Login button."""
+        if hasattr(self, "spinner_label") and self.spinner_label:
+            self.spinner_movie.stop()
+            self.spinner_label.deleteLater()
+            self.spinner_label = None
+
+        # Re-enable the button
+        self.login_button.setText("Login")
+        self.login_button.setDisabled(False)

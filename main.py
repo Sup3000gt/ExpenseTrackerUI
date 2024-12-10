@@ -11,7 +11,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Expense Tracker")
         self.jwt_token = load_token()  # Load token from keyring
-        self.setFixedSize(400, 600)
+        self.setFixedSize(480, 600)
 
         if self.jwt_token and is_token_valid(self.jwt_token):
             self.show_message_view("Welcome back!")
@@ -65,11 +65,13 @@ def main():
 
         /* Modern Title Styling */
         QLabel#TitleLabel {
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 36px;
+            font-weight: 700;
             color: #2e2e2e;
             text-align: center;
-            letter-spacing: 1.2px;
+            letter-spacing: 1.5px;
+            font-family: "Poppins", sans-serif;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
         }
         QLabel#TitleLabel:hover {
             color: #555;
