@@ -1,5 +1,5 @@
 import requests
-from appconfig import USER_BASE_API_URL, SUBSCRIPTION_KEY
+from appconfig import USER_BASE_API_URL, USER_SERVICE_SUBSCRIPTION_KEY
 
 def login_user(username, password):
     """
@@ -8,7 +8,7 @@ def login_user(username, password):
     api_url = f"{USER_BASE_API_URL}/Users/login"
     headers = {
         "Content-Type": "application/json",
-        "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY  # Include the subscription key
+        "Ocp-Apim-Subscription-Key": USER_SERVICE_SUBSCRIPTION_KEY  # Include the subscription key
     }
     payload = {"username": username, "password": password}
 
