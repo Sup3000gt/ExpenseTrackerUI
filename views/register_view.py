@@ -1,10 +1,23 @@
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QScrollArea
-from services.user_service import register_user
-from PySide6.QtGui import QIcon
-from PySide6.QtCore import QSize
-import re
 
+import re
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QScrollArea
+from PySide6.QtGui import QMovie, QIcon
+from PySide6.QtCore import QSize
+import os
+from services.user_service import register_user
+
+class RegisterThread(QThread):
+    """Thread for handling the registration API call."""
+    register_result = Signal(bool, str)
+
+    def __init__(self, data):
+        super().__init__()
+        self.data = data
+
+    def run(self):
+        success, message = register_user(self.data)
+        self.register_result.emit(success, message)
 
 class RegisterView(QWidget):
     def __init__(self, parent):
@@ -153,8 +166,42 @@ class RegisterView(QWidget):
         self.layout.addWidget(input_field)
         return input_field
 
+    def show_loading_animation_on_button(self):
+        """Show a spinning icon on the Register button."""
+        self.register_button.setText("")
+        self.spinner_label = QLabel(self.register_button)
+        self.spinner_label.setFixedSize(20, 20)
+        self.spinner_label.setAlignment(Qt.AlignCenter)
+
+        # Position the spinner inside the button
+        self.spinner_label.move(
+            (self.register_button.width() // 2) - 10,
+            (self.register_button.height() // 2) - 10
+        )
+
+        # Load and start the spinner animation
+        spinner_path = os.path.join(os.getcwd(), "assets", "spinner.gif")
+        self.spinner_movie = QMovie(spinner_path)
+        self.spinner_label.setMovie(self.spinner_movie)
+        self.spinner_movie.start()
+        self.spinner_label.show()
+
+        # Disable the button to prevent multiple clicks
+        self.register_button.setDisabled(True)
+
+    def hide_loading_animation_on_button(self):
+        """Remove the spinning icon from the Register button."""
+        if hasattr(self, "spinner_label") and self.spinner_label:
+            self.spinner_movie.stop()
+            self.spinner_label.deleteLater()
+            self.spinner_label = None
+
+        self.register_button.setText("Register")
+        self.register_button.setDisabled(False)
+
     def register_user(self):
         """Handle user registration."""
+        """Handle user registration with a loading spinner."""
         data = {
             "username": self.username_input.text().strip(),
             "passwordHash": self.password_input.text().strip(),
@@ -181,9 +228,20 @@ class RegisterView(QWidget):
             self.feedback_label.setText("Phone number must be exactly 10 digits.")
             return
 
-        # Call the API
-        success, message = register_user(data)  # Use the service directly
+        # Show spinner on the Register button
+        self.show_loading_animation_on_button()
+        # Start the register thread
+        self.register_thread = RegisterThread(data)
+        self.register_thread.register_result.connect(self.on_register_result)  # Connect the result signal
+        self.register_thread.start()
+
+    def on_register_result(self, success, message):
+        """Handle the result of the register API call."""
+        self.hide_loading_animation_on_button()
+
         if success:
             self.parent.show_message_view("Registration Successful! Please check your email to activate your account")
         else:
             self.feedback_label.setText(message)
+
+
