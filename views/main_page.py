@@ -51,19 +51,19 @@ class MainPage(QWidget):
 
         # Login button
         self.login_button = QPushButton("Login")
-        self.login_button.setStyleSheet("padding: 10px; font-size: 14px; background-color: #5cb85c; color: white; border-radius: 8px;")
+        self.login_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #5cb85c; color: white; border-radius: 8px;")
         self.login_button.clicked.connect(self.login_user)
         self.layout.addWidget(self.login_button)
 
         # Register button
         self.register_button = QPushButton("Register")
-        self.register_button.setStyleSheet("padding: 10px; font-size: 14px; background-color: #0275d8; color: white; border-radius: 8px;")
+        self.register_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #0275d8; color: white; border-radius: 8px;")
         self.register_button.clicked.connect(self.parent.show_register_view)
         self.layout.addWidget(self.register_button)
 
         # Forgot Password button
         self.forgot_password_button = QPushButton("Forgot Password")
-        self.forgot_password_button.setStyleSheet("padding: 10px; font-size: 14px; background-color: #f0ad4e; color: white; border-radius: 8px;")
+        self.forgot_password_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #f0ad4e; color: white; border-radius: 8px;")
         self.layout.addWidget(self.forgot_password_button)
 
         # Feedback label
@@ -81,8 +81,6 @@ class MainPage(QWidget):
         self.text_label = QLabel("Microsoft Software and Systems Academy", self)
         self.text_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #555; text-align: center;")
         self.layout.addWidget(self.text_label, alignment=Qt.AlignCenter)
-
-
 
     def login_user(self):
         """Handle user login with a loading spinner on the button."""
@@ -109,7 +107,7 @@ class MainPage(QWidget):
             self.parent.jwt_token = token
             self.parent.show_message_view("Login Successful!")
         else:
-            self.feedback_label.setText("Invalid Username or password")
+            self.feedback_label.setText("· Invalid Username or password")
 
     def show_loading_animation_on_button(self):
         self.login_button.setText("")
