@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QApplication, QMainWindow
+from views.forget_password_view import ForgotPasswordView
 from views.main_page import MainPage
 from views.login_view import LoginView
 from views.register_view import RegisterView
@@ -46,6 +47,9 @@ class MainWindow(QMainWindow):
         """Display a message view."""
         self.message_view = MessageView(message, self)
         self.setCentralWidget(self.message_view)
+
+    def show_forgot_password_view(self):
+        self.setCentralWidget(ForgotPasswordView(self))
 
 
 def main():

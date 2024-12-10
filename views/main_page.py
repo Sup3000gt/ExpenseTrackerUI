@@ -64,6 +64,7 @@ class MainPage(QWidget):
         # Forgot Password button
         self.forgot_password_button = QPushButton("Forgot Password")
         self.forgot_password_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #f0ad4e; color: white; border-radius: 8px;")
+        self.forgot_password_button.clicked.connect(self.parent.show_forgot_password_view)
         self.layout.addWidget(self.forgot_password_button)
 
         # Feedback label
