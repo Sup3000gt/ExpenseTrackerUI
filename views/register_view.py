@@ -182,7 +182,7 @@ class RegisterView(QWidget):
             return
 
         # Call the API
-        success, message = self.parent.register_user(data)
+        success, message = register_user(data)  # Use the service directly
         if success:
             self.parent.show_message_view("Registration Successful! Please check your email to activate your account")
         else:

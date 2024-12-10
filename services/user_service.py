@@ -1,8 +1,5 @@
 import requests
-
-REGISTER_API_URL = "https://expenseuserserviceapi.azure-api.net/api/Users/register"
-SUBSCRIPTION_KEY = "49630d64dd954e64b06992eade60a44e"
-
+from appconfig import BASE_API_URL, SUBSCRIPTION_KEY
 
 def register_user(data):
     """
@@ -14,12 +11,13 @@ def register_user(data):
     Returns:
         tuple: (success: bool, message: str)
     """
+    api_url = f"{BASE_API_URL}/Users/register"
     headers = {
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY
     }
     try:
-        response = requests.post(REGISTER_API_URL, headers=headers, json=data)
+        response = requests.post(api_url, headers=headers, json=data)
         if response.status_code == 200:
             return True, "Registration Successful"
         return False, f"Error: {response.text}"
