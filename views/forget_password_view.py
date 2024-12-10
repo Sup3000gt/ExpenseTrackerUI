@@ -1,10 +1,11 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel
 from PySide6.QtCore import Qt
 import requests
 from appconfig import USER_BASE_API_URL, USER_SERVICE_SUBSCRIPTION_KEY
 from PySide6.QtCore import QThread, Signal
 import os
-from PySide6.QtGui import QMovie
+from PySide6.QtGui import QMovie, QIcon
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QScrollArea
 
 class PasswordResetThread(QThread):
     """Thread for handling the password reset API call."""
@@ -44,8 +45,10 @@ class ForgotPasswordView(QWidget):
         self.layout.setSpacing(20)
         self.layout.setContentsMargins(40, 40, 40, 40)
 
+        self.add_back_button()  # Add back button
+
         # Title label
-        self.title_label = QLabel("Forgot Password")
+        self.title_label = QLabel("Reset Your Password")
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #555; text-align: center;")
         self.layout.addWidget(self.title_label)
@@ -72,6 +75,30 @@ class ForgotPasswordView(QWidget):
         self.feedback_label = QLabel("")
         self.feedback_label.setStyleSheet("font-size: 18px; font-weight: bold; color: red; text-align: center;")
         self.layout.addWidget(self.feedback_label)
+
+    def add_back_button(self):
+        """Add a modern back button with an arrow to return to the main page."""
+        back_button = QPushButton()
+        back_button.setIcon(QIcon("assets/left-arrow.png"))
+        back_button.setIconSize(QSize(30, 30))
+        back_button.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;  /* Transparent background */
+                border: none;  /* No border for flat design */
+                padding: 5px;
+            }
+            QPushButton:hover {
+                background-color: rgba(0, 0, 0, 0.05);  /* Light hover effect */
+                border-radius: 12px;  /* Rounded corners for hover */
+            }
+        """)
+        back_button.clicked.connect(self.parent.show_main_page)
+
+        # Add to a horizontal layout to align it to the left
+        back_button_layout = QHBoxLayout()
+        back_button_layout.addWidget(back_button)
+        back_button_layout.setAlignment(Qt.AlignLeft)  # Align to the left
+        self.layout.addLayout(back_button_layout)
 
     def request_password_reset(self):
         """Handle password reset with a loading spinner."""
