@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QHBoxLayout, QFrame, QListWidget, QListWidgetItem
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QIcon
 import requests
 import os
 import locale
@@ -10,28 +10,85 @@ class ContentView(QWidget):
         super().__init__()
         self.parent = parent
         self.layout = QVBoxLayout(self)
-        self.layout.setSpacing(20)
+        self.layout.setSpacing(10)
         self.layout.setContentsMargins(20, 20, 20, 20)
 
-        # Logout button
-        self.logout_button = QPushButton("Logout")
-        self.logout_button.setStyleSheet("padding: 10px; font-size: 14px; background-color: red; color: white; border-radius: 8px;")
-        self.logout_button.clicked.connect(self.logout)
-        self.logout_layout = QHBoxLayout()
-        self.logout_layout.addWidget(self.logout_button, alignment=Qt.AlignRight)
-        self.layout.addLayout(self.logout_layout)
+        # Title at the top center
+        self.title_label = QLabel("Expense Tracker Dashboard")
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #333;")
+        self.layout.addWidget(self.title_label)
+
+        # Buttons container
+        self.buttons_layout = QHBoxLayout()  # Define the buttons layout here
+        self.buttons_layout.setSpacing(15)
 
         # User profile button
-        self.profile_button = QPushButton("User Profile")
-        self.profile_button.setStyleSheet("padding: 10px; font-size: 14px; background-color: #0275d8; color: white; border-radius: 8px;")
+        self.profile_button = QPushButton()
+        self.profile_button.setIcon(QIcon(QPixmap("assets/user_profile_icon.png")))
+        self.profile_button.setIconSize(QSize(32, 32))
+        self.profile_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background: transparent;
+            }
+            QPushButton:hover {
+                background-color: rgba(0, 0, 0, 0.1); /* Optional hover effect */
+            }
+        """)
         self.profile_button.clicked.connect(self.show_user_profile)
-        self.layout.addWidget(self.profile_button, alignment=Qt.AlignLeft)
+        self.buttons_layout.addWidget(self.profile_button)
 
         # Add transaction button
-        self.add_transaction_button = QPushButton("Add Transaction")
-        self.add_transaction_button.setStyleSheet("padding: 10px; font-size: 14px; background-color: green; color: white; border-radius: 8px;")
+        self.add_transaction_button = QPushButton()
+        self.add_transaction_button.setIcon(QIcon(QPixmap("assets/add_transaction_icon.png")))
+        self.add_transaction_button.setIconSize(QSize(32, 32))
+        self.add_transaction_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background: transparent;
+            }
+            QPushButton:hover {
+                background-color: rgba(0, 0, 0, 0.1); /* Optional hover effect */
+            }
+        """)
         self.add_transaction_button.clicked.connect(self.add_transaction)
-        self.layout.addWidget(self.add_transaction_button, alignment=Qt.AlignLeft)
+        self.buttons_layout.addWidget(self.add_transaction_button)
+
+        # Generate report button
+        self.generate_report_button = QPushButton()
+        self.generate_report_button.setIcon(QIcon(QPixmap("assets/report.png")))
+        self.generate_report_button.setIconSize(QSize(32, 32))
+        self.generate_report_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background: transparent;
+            }
+            QPushButton:hover {
+                background-color: rgba(0, 0, 0, 0.1); /* Optional hover effect */
+            }
+        """)
+        self.generate_report_button.clicked.connect(self.generate_report)
+        self.buttons_layout.addWidget(self.generate_report_button)
+
+        # Logout button
+        self.logout_button = QPushButton()
+        self.logout_button.setIcon(QIcon(QPixmap("assets/logout.png")))
+        self.logout_button.setIconSize(QSize(32, 32))
+        self.logout_button.setStyleSheet("""
+            QPushButton {
+                border: none;
+                background: transparent;
+            }
+            QPushButton:hover {
+                background-color: rgba(0, 0, 0, 0.1); /* Optional hover effect */
+            }
+        """)
+        self.logout_button.clicked.connect(self.logout)
+        self.buttons_layout.addWidget(self.logout_button)
+
+        # Add buttons layout to the main layout
+        self.layout.addLayout(self.buttons_layout)
 
         # Container for headers and transaction list
         transaction_container = QWidget()
@@ -216,7 +273,13 @@ class ContentView(QWidget):
         """Navigate to the user profile view."""
         self.parent.show_user_profile_view()
 
+    def generate_report(self):
+        self.parent.show_generate_report_view()
+
     def add_transaction(self):
         """Navigate to the AddTransactionView."""
         self.parent.show_add_transaction_view()
 
+    def generate_report(self):
+        """Placeholder for Generate Report functionality."""
+        pass

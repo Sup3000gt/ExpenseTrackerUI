@@ -1,5 +1,4 @@
 from PySide6.QtWidgets import QApplication, QMainWindow
-
 from views.Transaction_Details_View import TransactionDetailsView
 from views.add_transaction_view import AddTransactionView
 from views.forget_password_view import ForgotPasswordView
