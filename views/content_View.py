@@ -132,8 +132,8 @@ class ContentView(QWidget):
             # Create a widget for the transaction item
             item_widget = QWidget()
             layout = QHBoxLayout()
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.setSpacing(0)
+            layout.setContentsMargins(10, 5, 10, 5)  # Left, Top, Right, Bottom margins
+            layout.setSpacing(10)  # Space between widgets
             item_widget.setLayout(layout)
 
             # Icon for transaction type (no wrapping, just place the icon)
@@ -191,7 +191,9 @@ class ContentView(QWidget):
             # Create a QListWidgetItem and set the custom widget
             list_item = QListWidgetItem()
             # Increase row height for better appearance
-            list_item.setSizeHint(QSize(list_item.sizeHint().width(), 50))
+            item_widget.setFixedHeight(50)  # Set a fixed height for the row
+            list_item.setSizeHint(item_widget.sizeHint())
+
             list_item.setData(Qt.UserRole, transaction)  # Store transaction data
             self.transaction_list.addItem(list_item)
             self.transaction_list.setItemWidget(list_item, item_widget)
