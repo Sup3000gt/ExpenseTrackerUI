@@ -6,12 +6,16 @@ from views.register_view import RegisterView
 from views.message_view import MessageView
 from utils.storage_utils import save_token, load_token, delete_token
 from utils.jwt_utils import is_token_valid
+from views.content_View import ContentView
+from appconfig import TRANSACTION_SERVICE_SUBSCRIPTION_KEY
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Expense Tracker")
         self.jwt_token = load_token()  # Load token from keyring
+        self.user_id = None
+        self.subscription_key = TRANSACTION_SERVICE_SUBSCRIPTION_KEY
         self.setFixedSize(480, 600)
 
         if self.jwt_token and is_token_valid(self.jwt_token):
@@ -50,6 +54,9 @@ class MainWindow(QMainWindow):
 
     def show_forgot_password_view(self):
         self.setCentralWidget(ForgotPasswordView(self))
+
+    def show_content_view(self):
+        self.setCentralWidget(ContentView(self))
 
 
 def main():

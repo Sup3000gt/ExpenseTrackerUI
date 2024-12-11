@@ -36,6 +36,6 @@ class LoginView(QWidget):
         if success:
             save_token(token)  # Save token securely using keyring
             self.parent.jwt_token = token
-            self.parent.show_message_view("Login Successful!")
+            self.parent.show_content_view()
         else:
             self.feedback_label.setText(message)

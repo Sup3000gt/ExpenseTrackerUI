@@ -4,12 +4,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 from PySide6.QtGui import QMovie
 from PySide6.QtCore import QThread, Signal
-import os
 from PySide6.QtGui import QPixmap
-
+import os
 
 class LoginThread(QThread):
-    login_result = Signal(bool, str, str)  # Signal to send (success, message, token)
+    login_result = Signal(bool, dict, str)  # Signal to send (success, message, token)
 
     def __init__(self, username, password):
         super().__init__()
@@ -18,8 +17,17 @@ class LoginThread(QThread):
 
     def run(self):
         """Run the API call in a separate thread."""
-        success, message, token = login_user(self.username, self.password)
-        self.login_result.emit(success, message, token)
+        success, response_data, token = login_user(self.username, self.password)
+
+        # Ensure response_data is parsed as a dictionary
+        if isinstance(response_data, str):
+            try:
+                import json
+                response_data = json.loads(response_data)
+            except json.JSONDecodeError:
+                response_data = {"message": response_data}  # Fallback for non-JSON responses
+
+        self.login_result.emit(success, response_data, token)
 
 class MainPage(QWidget):
     def __init__(self, parent):
@@ -100,15 +108,23 @@ class MainPage(QWidget):
         self.login_thread.login_result.connect(self.on_login_result)  # Connect the result signal
         self.login_thread.start()
 
-    def on_login_result(self, success, message, token):
+    def on_login_result(self, success, response_data, token):
         """Handle the result of the login API call."""
         self.hide_loading_animation_on_button()
 
         if success:
-            self.parent.jwt_token = token
-            self.parent.show_message_view("Login Successful!")
+            self.parent.jwt_token = response_data.get("token")
+            self.parent.user_id = response_data.get("userId")
+            self.parent.show_content_view()
         else:
-            self.feedback_label.setText("· Invalid Username or password")
+            error_message = response_data.get("message", "Invalid Username or password")
+            self.feedback_label.setText(error_message)
+
+    def get_user_id_from_token(self, token):
+        # Example: Extracting user_id from token or a decoded payload
+        import jwt
+        payload = jwt.decode(token, options={"verify_signature": False})
+        return payload.get("user_id")
 
     def show_loading_animation_on_button(self):
         self.login_button.setText("")
