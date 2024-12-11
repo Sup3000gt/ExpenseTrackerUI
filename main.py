@@ -1,6 +1,7 @@
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 from views.Transaction_Details_View import TransactionDetailsView
+from views.add_transaction_view import AddTransactionView
 from views.forget_password_view import ForgotPasswordView
 from views.main_page import MainPage
 from views.login_view import LoginView
@@ -36,6 +37,10 @@ class MainWindow(QMainWindow):
         self.jwt_token = None
         self.show_main_page()
 
+    def show_add_transaction_view(self):
+        """Show the AddTransactionView."""
+        self.add_transaction_view = AddTransactionView(self)
+        self.setCentralWidget(self.add_transaction_view)
 
     def show_main_page(self):
         self.main_page = MainPage(self)

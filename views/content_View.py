@@ -217,5 +217,6 @@ class ContentView(QWidget):
         self.parent.show_user_profile_view()
 
     def add_transaction(self):
-        """Navigate to the add transaction view."""
+        """Navigate to the AddTransactionView."""
         self.parent.show_add_transaction_view()
+
