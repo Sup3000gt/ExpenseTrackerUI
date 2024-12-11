@@ -1,7 +1,8 @@
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QDateEdit, \
+    QMessageBox, QTextEdit, QDialog
+from PySide6.QtCore import Qt, QDate, QLocale
 import requests
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QDateEdit, QMessageBox
-from PySide6.QtCore import Qt, QDate
-from PySide6.QtCore import QLocale
+
 
 class AddTransactionView(QWidget):
     def __init__(self, parent):
@@ -9,13 +10,21 @@ class AddTransactionView(QWidget):
         self.parent = parent
 
         self.layout = QVBoxLayout(self)
-        self.layout.setSpacing(20)
+        self.layout.setSpacing(10)  # Adjusted spacing between fields
         self.layout.setContentsMargins(20, 20, 20, 20)
 
         # Title
         self.title_label = QLabel("Add New Transaction")
         self.title_label.setAlignment(Qt.AlignCenter)
-        self.title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.title_label.setStyleSheet("""
+            QLabel {
+                font-size: 20px;  /* Slightly larger font size for emphasis */
+                font-family: 'Comic Sans MS', sans-serif;  /* Playful and casual font */
+                font-weight: 600;  /* Semi-bold for a subtle emphasis */
+                color: #222;  /* Darker gray for better readability */
+                margin-bottom: 10px;  /* Add some space below the title */
+            }
+        """)
         self.layout.addWidget(self.title_label)
 
         # Transaction Type
@@ -60,20 +69,20 @@ class AddTransactionView(QWidget):
         self.date_input.setCalendarPopup(True)
         self.date_input.setDate(QDate.currentDate())
         self.date_input.setStyleSheet("""
-                    QDateEdit {
-                        padding: 5px;
-                        font-size: 14px;
-                        border: 1px solid #ccc;
-                        border-radius: 4px;
-                    }
-                    QDateEdit::drop-down {
-                        subcontrol-origin: padding;
-                        subcontrol-position: top right;
-                        width: 20px;
-                        border-left: 1px solid #ccc;
-                    }
-                """)
-        self.date_input.setLocale(QLocale(QLocale.English)) # Set locale after creating the widget
+            QDateEdit {
+                padding: 5px;
+                font-size: 14px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+            QDateEdit::drop-down {
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 20px;
+                border-left: 1px solid #ccc;
+            }
+        """)
+        self.date_input.setLocale(QLocale(QLocale.English))  # Set locale after creating the widget
         self.layout.addWidget(self.date_input)
 
         # Description
@@ -81,48 +90,50 @@ class AddTransactionView(QWidget):
         self.description_label.setStyleSheet("font-size: 14px;")
         self.layout.addWidget(self.description_label)
 
-        self.description_input = QLineEdit()
+        self.description_input = QTextEdit()  # Changed to QTextEdit for larger input
         self.description_input.setPlaceholderText("Enter description")
         self.description_input.setStyleSheet("padding: 5px; font-size: 14px;")
+        self.description_input.setFixedHeight(100)  # Increased height for more input space
         self.layout.addWidget(self.description_input)
+
+        # Buttons (Horizontal Layout)
+        self.buttons_layout = QHBoxLayout()
 
         # Add Transaction Button
         self.add_button = QPushButton("Add Transaction")
         self.add_button.setStyleSheet("""
             QPushButton {
-                padding: 5px;  /* Adjust padding */
-                font-size: 16px;  /* Ensure font size is appropriate */
+                padding: 5px;
+                font-size: 14px;
                 background-color: green;
                 color: white;
-                border-radius: 8px;
-                height: 80px;  /* Increased height */
-                width: 200px;  /* Optional: Set a fixed width if needed */
+                border-radius: 4px;
             }
             QPushButton:hover {
                 background-color: #28a745;
             }
         """)
         self.add_button.clicked.connect(self.add_transaction)
-        self.layout.addWidget(self.add_button)
+        self.buttons_layout.addWidget(self.add_button)
 
         # Cancel Button
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setStyleSheet("""
             QPushButton {
-                padding: 5px;  /* Adjust padding */
-                font-size: 16px;  /* Ensure font size is appropriate */
+                padding: 5px;
+                font-size: 14px;
                 background-color: red;
                 color: white;
-                border-radius: 8px;
-                height: 80px;  /* Increased height */
-                width: 200px;  /* Optional: Set a fixed width if needed */
+                border-radius: 4px;
             }
             QPushButton:hover {
                 background-color: #dc3545;
             }
         """)
         self.cancel_button.clicked.connect(self.cancel)
-        self.layout.addWidget(self.cancel_button)
+        self.buttons_layout.addWidget(self.cancel_button)
+
+        self.layout.addLayout(self.buttons_layout)  # Add buttons to the main layout
 
     def update_category_options(self, transaction_type):
         """Update category options based on the selected transaction type."""
@@ -143,7 +154,7 @@ class AddTransactionView(QWidget):
             "transactionType": self.type_combobox.currentText(),
             "amount": float(self.amount_input.text()),
             "date": self.date_input.date().toString("yyyy-MM-dd"),
-            "description": self.description_input.text(),
+            "description": self.description_input.toPlainText(),  # Get full text from QTextEdit
             "category": self.category_combobox.currentText()
         }
 
@@ -156,12 +167,71 @@ class AddTransactionView(QWidget):
         try:
             response = requests.post(api_url, json=transaction_data, headers=headers)
             if response.status_code == 200:
-                QMessageBox.information(self, "Success", "Transaction added successfully!")
+                self.show_success_message()
                 self.parent.show_content_view()  # Redirect to the content page
             else:
                 QMessageBox.warning(self, "Error", f"Failed to add transaction: {response.status_code}")
         except Exception as e:
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+
+    def show_success_message(self):
+        """Display a modern styled success message dialog with a centered button."""
+        # Create a custom dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Success")
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #f4f4f4;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+            }
+            QLabel {
+                font-size: 14px;
+                color: #333;
+            }
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                font-size: 14px;
+                padding: 6px 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
+
+        # Create a vertical layout
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(20)
+
+        # Add a success message
+        message_label = QLabel("Transaction added successfully!")
+        message_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(message_label)
+
+        # Add the OK button
+        ok_button = QPushButton("OK")
+        ok_button.setFixedSize(100, 40)
+        ok_button.clicked.connect(dialog.accept)  # Close the dialog when clicked
+        ok_button.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                font-size: 14px;
+                padding: 6px 12px;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #218838;
+            }
+        """)
+        layout.addWidget(ok_button, alignment=Qt.AlignCenter)  # Center the button
+
+        # Set the layout and show the dialog
+        dialog.setLayout(layout)
+        dialog.exec()
 
     def cancel(self):
         """Handle the cancel action and redirect to the content view."""
