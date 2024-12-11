@@ -204,21 +204,7 @@ class ContentView(QWidget):
     def display_transaction_details(self, item):
         """Display detailed info for a selected transaction."""
         transaction = item.data(Qt.UserRole)  # Retrieve the full transaction data
-        detail_text = (
-            f"Transaction ID: {transaction['id']}\n"
-            f"Type: {transaction['transactionType']}\n"
-            f"Amount: ${transaction['amount']}\n"
-            f"Date: {transaction['date']}\n"
-            f"Description: {transaction['description']}\n"
-            f"Category: {transaction['category']}\n"
-            f"Created At: {transaction['createdAt']}\n"
-        )
-        # Show details in a popup or another widget
-        detail_popup = QLabel(detail_text)
-        detail_popup.setWindowTitle("Transaction Details")
-        detail_popup.setWordWrap(True)
-        detail_popup.setMinimumSize(QSize(400, 300))
-        detail_popup.show()
+        self.parent.show_transaction_details_view(transaction)
 
     def logout(self):
         """Handle logout functionality."""

@@ -1,4 +1,6 @@
 from PySide6.QtWidgets import QApplication, QMainWindow
+
+from views.Transaction_Details_View import TransactionDetailsView
 from views.forget_password_view import ForgotPasswordView
 from views.main_page import MainPage
 from views.login_view import LoginView
@@ -57,6 +59,15 @@ class MainWindow(QMainWindow):
 
     def show_content_view(self):
         self.setCentralWidget(ContentView(self))
+
+    def show_transaction_details_view(self, transaction_data):
+        """Show the transaction details view."""
+        self.transaction_details_view = TransactionDetailsView(self, transaction_data)
+        self.setCentralWidget(self.transaction_details_view)
+    #
+    # def show_content_view(self):
+    #     """Show the content view."""
+    #     self.setCentralWidget(self.content_view)
 
 
 def main():
