@@ -64,11 +64,6 @@ class MainWindow(QMainWindow):
         """Show the transaction details view."""
         self.transaction_details_view = TransactionDetailsView(self, transaction_data)
         self.setCentralWidget(self.transaction_details_view)
-    #
-    # def show_content_view(self):
-    #     """Show the content view."""
-    #     self.setCentralWidget(self.content_view)
-
 
 def main():
     app = QApplication([])
