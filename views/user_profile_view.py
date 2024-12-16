@@ -1,6 +1,6 @@
 import re
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit, QHBoxLayout, QMessageBox
+    QWidget, QVBoxLayout, QLabel, QPushButton, QLineEdit, QHBoxLayout, QMessageBox, QFrame
 )
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QFont
@@ -25,6 +25,9 @@ class UserProfileView(QWidget):
         self.title_label.setFont(QFont("Arial", 18, QFont.Bold))
         self.layout.addWidget(self.title_label)
 
+        # Divider
+        self.add_divider()
+
         # Profile Fields
         self.fields = {}
         self.create_profile_fields()
@@ -45,6 +48,31 @@ class UserProfileView(QWidget):
         button_layout.addWidget(self.save_button)
         self.layout.addLayout(button_layout)
 
+        # Divider
+        self.add_divider()
+
+        # Change Password Section
+        self.change_password_button = QPushButton("🔒 Change Password")
+        self.change_password_button.setStyleSheet(self.button_style())
+        self.change_password_button.clicked.connect(self.show_password_input)
+        self.layout.addWidget(self.change_password_button, alignment=Qt.AlignCenter)
+
+        # Password Input and Submit Button (initially hidden)
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("Enter new password")
+        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setFont(QFont("Arial", 14))
+        self.password_input.setStyleSheet("background-color: #ffffff; border-radius: 5px;")
+        self.password_input.hide()
+
+        self.submit_password_button = QPushButton("💾 Submit Password")
+        self.submit_password_button.setStyleSheet(self.button_style())
+        self.submit_password_button.clicked.connect(self.submit_password_change)
+        self.submit_password_button.hide()
+
+        self.layout.addWidget(self.password_input)
+        self.layout.addWidget(self.submit_password_button, alignment=Qt.AlignCenter)
+
         # Fetch and populate user profile
         self.fetch_user_profile()
 
@@ -59,7 +87,19 @@ class UserProfileView(QWidget):
 
     def style_buttons(self):
         """Style the Edit and Save buttons."""
-        button_style = """
+        button_style = self.button_style()
+        self.edit_button.setStyleSheet(button_style)
+        self.save_button.setStyleSheet(button_style)
+
+    def add_divider(self):
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setFrameShadow(QFrame.Sunken)
+        self.layout.addWidget(divider)
+
+    def button_style(self):
+        """Reusable button style."""
+        return """
             QPushButton {
                 background-color: #5A9CFF;
                 color: white;
@@ -71,8 +111,6 @@ class UserProfileView(QWidget):
                 background-color: #0073E6;
             }
         """
-        self.edit_button.setStyleSheet(button_style)
-        self.save_button.setStyleSheet(button_style)
 
     def create_profile_fields(self):
         """Create textboxes for displaying user profile information."""
@@ -131,6 +169,34 @@ class UserProfileView(QWidget):
         self.fields["Last Name"].setText(profile["lastName"])
         self.fields["Phone"].setText(self.format_phone(profile["phoneNumber"]))
         self.fields["Date of Birth"].setText(profile["dateOfBirth"][:10])
+
+    def show_password_input(self):
+        """Show the password input and submit button."""
+        self.password_input.show()
+        self.submit_password_button.show()
+
+    def submit_password_change(self):
+        """Validate and send the new password to the Change Password API."""
+        new_password = self.password_input.text().strip()
+        if not new_password:
+            QMessageBox.warning(self, "Validation Error", "Password cannot be empty.")
+            return
+
+        payload = {"username": self.fields["Username"].text(), "newPassword": new_password}
+        api_url = "https://expenseuserserviceapi.azure-api.net/api/Users/change-password"
+        headers = {"Authorization": f"Bearer {self.parent.jwt_token}"}
+
+        try:
+            response = requests.post(api_url, headers=headers, json=payload)
+            if response.status_code == 200:
+                QMessageBox.information(self, "Success", "Password changed successfully!")
+                self.password_input.hide()
+                self.submit_password_button.hide()
+                self.password_input.clear()
+            else:
+                QMessageBox.critical(self, "Error", f"Failed to change password: {response.text}")
+        except Exception as e:
+            QMessageBox.critical(self, "Error", str(e))
 
     def enable_editing(self):
         """Enable editing for fields except Username."""
