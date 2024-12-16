@@ -32,7 +32,7 @@ class UserProfileView(QWidget):
         self.fields = {}
         self.create_profile_fields()
 
-        # Buttons Layout
+        # Buttons Layout for editing profile
         button_layout = QHBoxLayout()
         self.edit_button = QPushButton("✏️ Edit Profile")
         self.save_button = QPushButton("💾 Save Changes")
@@ -51,27 +51,39 @@ class UserProfileView(QWidget):
         # Divider
         self.add_divider()
 
-        # Change Password Section
-        self.change_password_button = QPushButton("🔒 Change Password")
-        self.change_password_button.setStyleSheet(self.button_style())
-        self.change_password_button.clicked.connect(self.show_password_input)
-        self.layout.addWidget(self.change_password_button, alignment=Qt.AlignCenter)
+        # Password Field and Buttons
+        # Password Line
+        password_layout = QHBoxLayout()
 
-        # Password Input and Submit Button (initially hidden)
+        pwd_label = QLabel("Password:")
+        pwd_label.setFont(QFont("Arial", 14, QFont.Bold))
+        pwd_label.setFixedWidth(120)
+
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Enter new password")
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setFont(QFont("Arial", 14))
-        self.password_input.setStyleSheet("background-color: #ffffff; border-radius: 5px;")
-        self.password_input.hide()
+        self.password_input.setDisabled(True)  # Initially disabled
+        self.password_input.setStyleSheet("background-color: #f0f0f0; border-radius: 5px;")
 
+        password_layout.addWidget(pwd_label)
+        password_layout.addWidget(self.password_input)
+        self.layout.addLayout(password_layout)
+
+        # Buttons for Password
+        pwd_button_layout = QHBoxLayout()
+        self.change_password_button = QPushButton("🔒 Change Password")
         self.submit_password_button = QPushButton("💾 Submit Password")
-        self.submit_password_button.setStyleSheet(self.button_style())
-        self.submit_password_button.clicked.connect(self.submit_password_change)
-        self.submit_password_button.hide()
 
-        self.layout.addWidget(self.password_input)
-        self.layout.addWidget(self.submit_password_button, alignment=Qt.AlignCenter)
+        self.change_password_button.setStyleSheet(self.button_style())
+        self.submit_password_button.setStyleSheet(self.button_style())
+
+        self.change_password_button.clicked.connect(self.enable_password_editing)
+        self.submit_password_button.clicked.connect(self.submit_password_change)
+
+        pwd_button_layout.addWidget(self.change_password_button)
+        pwd_button_layout.addWidget(self.submit_password_button)
+        self.layout.addLayout(pwd_button_layout)
 
         # Fetch and populate user profile
         self.fetch_user_profile()
@@ -170,10 +182,10 @@ class UserProfileView(QWidget):
         self.fields["Phone"].setText(self.format_phone(profile["phoneNumber"]))
         self.fields["Date of Birth"].setText(profile["dateOfBirth"][:10])
 
-    def show_password_input(self):
-        """Show the password input and submit button."""
-        self.password_input.show()
-        self.submit_password_button.show()
+    def enable_password_editing(self):
+        """Enable editing for the password field."""
+        self.password_input.setDisabled(False)
+        self.password_input.setStyleSheet("background-color: #ffffff; border: 1px solid #ccc;")
 
     def submit_password_change(self):
         """Validate and send the new password to the Change Password API."""
@@ -190,8 +202,9 @@ class UserProfileView(QWidget):
             response = requests.post(api_url, headers=headers, json=payload)
             if response.status_code == 200:
                 QMessageBox.information(self, "Success", "Password changed successfully!")
-                self.password_input.hide()
-                self.submit_password_button.hide()
+                # After successful change, disable again and clear.
+                self.password_input.setDisabled(True)
+                self.password_input.setStyleSheet("background-color: #f0f0f0; border-radius: 5px;")
                 self.password_input.clear()
             else:
                 QMessageBox.critical(self, "Error", f"Failed to change password: {response.text}")
