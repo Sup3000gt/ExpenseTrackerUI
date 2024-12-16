@@ -10,6 +10,7 @@ from utils.storage_utils import save_token, load_token, delete_token
 from utils.jwt_utils import is_token_valid
 from views.content_View import ContentView
 from appconfig import TRANSACTION_SERVICE_SUBSCRIPTION_KEY
+from views.report_view import ReportView
 from views.user_profile_view import UserProfileView
 
 
@@ -75,6 +76,10 @@ class MainWindow(QMainWindow):
 
     def show_user_profile_view(self):
         self.setCentralWidget(UserProfileView(self))
+
+    def show_report_view(self):
+        self.report_view = ReportView(self)
+        self.setCentralWidget(self.report_view)
 
 def main():
     app = QApplication([])

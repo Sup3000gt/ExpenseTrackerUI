@@ -289,5 +289,4 @@ class ContentView(QWidget):
         self.parent.show_add_transaction_view()
 
     def generate_report(self):
-        """Placeholder for Generate Report functionality."""
-        pass
+        self.parent.show_report_view()
