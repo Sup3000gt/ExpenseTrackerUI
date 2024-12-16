@@ -238,6 +238,7 @@ class UserProfileView(QWidget):
                 field.setDisabled(False)
                 field.setStyleSheet("background-color: #ffffff; border: 1px solid #ccc;")
         self.save_button.setDisabled(False)
+        self.edit_button.setDisabled(True)
 
     def submit_profile_changes(self):
         """Validate fields and submit data."""
@@ -270,13 +271,14 @@ class UserProfileView(QWidget):
             "dateOfBirth": dob
         }
 
-        # Send to API
         api_url = "https://expenseuserserviceapi.azure-api.net/api/Users/update-profile"
         headers = {"Authorization": f"Bearer {self.parent.jwt_token}"}
         try:
             response = requests.put(api_url, headers=headers, json=updated_data)
             if response.status_code == 200:
                 self.show_message("Success", "Profile updated successfully!")
+                # Re-enable the Edit Profile button since changes are saved
+                self.edit_button.setDisabled(False)
                 self.parent.show_content_view()
             else:
                 self.show_message("Error", f"Failed to update profile: {response.text}", is_error=True)
