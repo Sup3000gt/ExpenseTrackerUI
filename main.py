@@ -10,6 +10,8 @@ from utils.storage_utils import save_token, load_token, delete_token
 from utils.jwt_utils import is_token_valid
 from views.content_View import ContentView
 from appconfig import TRANSACTION_SERVICE_SUBSCRIPTION_KEY
+from views.user_profile_view import UserProfileView
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -17,10 +19,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Expense Tracker")
         self.jwt_token = load_token()  # Load token from keyring
         self.user_id = None
+        self.username = None
         self.subscription_key = TRANSACTION_SERVICE_SUBSCRIPTION_KEY
         self.setFixedSize(480, 600)
 
         if self.jwt_token and is_token_valid(self.jwt_token):
+            self.extract_user_details_from_token()
             self.show_message_view("Welcome back!")
         else:
             self.show_main_page()
@@ -68,6 +72,9 @@ class MainWindow(QMainWindow):
         """Show the transaction details view."""
         self.transaction_details_view = TransactionDetailsView(self, transaction_data)
         self.setCentralWidget(self.transaction_details_view)
+
+    def show_user_profile_view(self):
+        self.setCentralWidget(UserProfileView(self))
 
 def main():
     app = QApplication([])

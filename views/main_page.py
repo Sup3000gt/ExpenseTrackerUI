@@ -6,6 +6,8 @@ from PySide6.QtGui import QMovie
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QPixmap
 import os
+import jwt
+import logging
 
 class LoginThread(QThread):
     login_result = Signal(bool, dict, str)  # Signal to send (success, message, token)
@@ -114,17 +116,25 @@ class MainPage(QWidget):
 
         if success:
             self.parent.jwt_token = response_data.get("token")
-            self.parent.user_id = response_data.get("userId")
+            self.parent.user_id, self.parent.username = self.get_user_details_from_token(
+                token)  # Extract user_id and username
             self.parent.show_content_view()
         else:
             error_message = response_data.get("message", "Invalid Username or password")
             self.feedback_label.setText(error_message)
 
-    def get_user_id_from_token(self, token):
-        # Example: Extracting user_id from token or a decoded payload
-        import jwt
-        payload = jwt.decode(token, options={"verify_signature": False})
-        return payload.get("user_id")
+    def get_user_details_from_token(self, token):
+        try:
+            # Decode the token to extract the payload
+            payload = jwt.decode(token, options={"verify_signature": False})
+            logging.debug(f"Decoded JWT payload: {payload}")
+            user_id = payload.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
+            username = payload.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
+            logging.debug(f"Extracted user_id: {user_id}, username: {username}")
+            return user_id, username
+        except jwt.PyJWTError as e:
+            logging.error(f"Failed to decode JWT token: {e}")
+            return None, None
 
     def show_loading_animation_on_button(self):
         self.login_button.setText("")
