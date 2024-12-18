@@ -103,6 +103,18 @@ class UserProfileView(QWidget):
         # Fetch and populate user profile
         self.fetch_user_profile()
 
+    def reset_fields_state(self):
+        """Reset all fields to their initial state (disabled)."""
+        for label, field in self.fields.items():
+            field.setDisabled(True)
+            if label != "Username":  # Username field remains uneditable
+                field.setStyleSheet("background-color: #f0f0f0; border-radius: 5px;")
+
+        self.save_button.setDisabled(True)
+        self.edit_button.setDisabled(False)
+        self.password_input.setDisabled(True)
+        self.password_input.setStyleSheet("background-color: #f0f0f0; border-radius: 5px;")
+
     def add_back_button(self):
         """Add a back button."""
         back_button = QPushButton()
@@ -174,6 +186,7 @@ class UserProfileView(QWidget):
 
     def fetch_user_profile(self):
         """Fetch user profile and populate fields."""
+        self.reset_fields_state()
         api_url = "https://expenseuserserviceapi.azure-api.net/api/Users/profile"
         headers = {"Authorization": f"Bearer {self.parent.jwt_token}"}
         params = {"username": self.parent.username}

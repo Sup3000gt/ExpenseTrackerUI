@@ -141,11 +141,11 @@ class MainWindow(QMainWindow):
 
     def show_user_profile_view(self):
         if not self.views["user_profile_view"]:
-            if not self.user_id:
-                print("Error: User information is missing for UserProfileView.")
-                return
             self.views["user_profile_view"] = UserProfileView(self, user_id=self.user_id, username=self.username)
             self.stacked_widget.addWidget(self.views["user_profile_view"])
+        else:
+            # 每次重新打开时重置状态
+            self.views["user_profile_view"].reset_fields_state()
         self.switch_to_view("user_profile_view")
 
     # def extract_user_details_from_token(self):
