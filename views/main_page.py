@@ -19,8 +19,9 @@ class LoginThread(QThread):
 
     def run(self):
         """Run the API call in a separate thread."""
+        print("LoginThread: Starting API call...")
         success, response_data, token = login_user(self.username, self.password)
-
+        print(f"LoginThread: API call result - success: {success}, response_data: {response_data}, token: {token}")
         # Ensure response_data is parsed as a dictionary
         if isinstance(response_data, str):
             try:
@@ -35,6 +36,7 @@ class MainPage(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        print(f"MainPage initialized with parent: {self.parent}")
         self.layout = QVBoxLayout(self)
         self.layout.setSpacing(20)
         self.layout.setContentsMargins(40, 40, 40, 40)
@@ -95,6 +97,7 @@ class MainPage(QWidget):
 
     def login_user(self):
         """Handle user login with a loading spinner on the button."""
+        print("Login button clicked, processing login...")
         username = self.username_input.text().strip()
         password = self.password_input.text().strip()
 
@@ -112,13 +115,16 @@ class MainPage(QWidget):
 
     def on_login_result(self, success, response_data, token):
         """Handle the result of the login API call."""
+        print(f"on_login_result called - success: {success}, response_data: {response_data}, token: {token[:10]}...")
         self.hide_loading_animation_on_button()
 
         if success:
-            self.parent.jwt_token = response_data.get("token")
-            self.parent.user_id, self.parent.username = self.get_user_details_from_token(
-                token)  # Extract user_id and username
-            self.parent.show_content_view()
+            user_id, username = self.get_user_details_from_token(token)
+            if user_id and username:
+                # 将登录结果传递给 MainWindow 的 on_login_result 方法
+                self.parent.on_login_result(user_id, username, token)
+            else:
+                self.feedback_label.setText("Failed to decode user details from token.")
         else:
             error_message = response_data.get("message", "Invalid Username or password")
             self.feedback_label.setText(error_message)

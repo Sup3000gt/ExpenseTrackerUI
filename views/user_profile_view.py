@@ -7,9 +7,11 @@ from PySide6.QtGui import QIcon, QFont
 import requests
 
 class UserProfileView(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent,user_id=None, username=None):
         super().__init__()
         self.parent = parent
+        self.user_id = user_id
+        self.username = username
 
         # Main Layout
         self.layout = QVBoxLayout(self)

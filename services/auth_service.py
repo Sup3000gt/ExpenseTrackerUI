@@ -14,11 +14,9 @@ def login_user(username, password):
 
     try:
         response = requests.post(api_url, headers=headers, json=payload)
-        # Log the response for debugging
-        print(f"Response Status Code: {response.status_code}")
-        print(f"Response Text: {response.text}")
-
         if response.status_code == 200:
+            print("Login successful")
+            print(response.json())
             try:
                 response_data = response.json()
                 return True, response_data, response_data.get("token")

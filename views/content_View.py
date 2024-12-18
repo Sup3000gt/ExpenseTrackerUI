@@ -8,9 +8,21 @@ import locale
 from datetime import datetime
 
 class ContentView(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent,user_id=None, username=None):
+        print("\n=== Initializing ContentView ===")
+        print(f"Creating ContentView with user_id={user_id}, username={username}")
         super().__init__()
+        print(f"ContentView initialized with parent: {parent}, type: {type(parent)}")
+
         self.parent = parent
+        self.user_id = user_id
+        self.username = username
+
+        # 检查 subscription_key 是否可用
+        if not hasattr(self.parent, 'subscription_key'):
+            raise AttributeError("Parent does not have attribute 'subscription_key'")
+        print(f"Subscription key: {self.parent.subscription_key}")
+
         self.current_page = 1
         self.current_month = "All"
         self.all_transactions = []  # Will hold all transactions once fetched
@@ -240,21 +252,47 @@ class ContentView(QWidget):
 
         self.layout.addLayout(pagination_layout)
 
-        # Fetch and display transactions (all at once)
+        # Fetch transactions placeholder
+        self.fetch_transactions_placeholder = QLabel("Please log in to view transactions.")
+        self.fetch_transactions_placeholder.setAlignment(Qt.AlignCenter)
+        self.fetch_transactions_placeholder.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                color: #888;
+            }
+        """)
+        self.layout.addWidget(self.fetch_transactions_placeholder)
+
+    def update_user_info(self, user_id, jwt_token):
+        """Update user-related information and refresh the view."""
+        print("\n=== update_user_info called ===")
+        self.user_id = user_id
+        self.jwt_token = jwt_token
+        print(f"Updated user info: user_id={self.user_id}, jwt_token={self.jwt_token[:10]}...")  # Debugging user info
+
+        # Fetch transactions after updating user info
         self.fetch_all_transactions()
 
     def fetch_all_transactions(self):
-        """Fetch all transaction records for the logged-in user and group them by month."""
-        api_url = f"https://expensetransactionserviceapi.azure-api.net/api/Transactions/user/{self.parent.user_id}"
+        """Fetch all transaction records for the logged-in user."""
+        print("fetch_all_transactions called")
+        print(f"Fetching transactions for user_id={self.user_id}")
+        print(f"JWT token available: {'yes' if self.jwt_token else 'no'}")
+        print(f"Subscription key: {self.parent.subscription_key}")
+        if not self.user_id or not self.jwt_token:
+            self.transaction_list.clear()
+            self.transaction_list.addItem("Error: User information is missing.")
+            return
+
+        api_url = f"https://expensetransactionserviceapi.azure-api.net/api/Transactions/user/{self.user_id}"
 
         headers = {
-            "Authorization": f"Bearer {self.parent.jwt_token}",
+            "Authorization": f"Bearer {self.jwt_token}",
             "Ocp-Apim-Subscription-Key": self.parent.subscription_key
         }
-        # Attempt to get a large pageSize or all transactions at once.
         params = {
             "page": 1,
-            "pageSize": 10000,  # Large number to fetch all transactions (adjust as needed)
+            "pageSize": 10000,  # Large number to fetch all transactions
             "sortBy": "date",
             "sortOrder": "desc"
         }
@@ -263,7 +301,12 @@ class ContentView(QWidget):
             response = requests.get(api_url, headers=headers, params=params)
             if response.status_code == 200:
                 data = response.json()
+                print(f"API URL: {api_url}")
+                print(f"Headers: {headers}")
+                print(f"Params: {params}")
                 self.all_transactions = data.get('transactions', [])
+                print(f"API Response: {response.status_code}")
+                print(f"Response Content: {response.text}")
                 self.group_by_month()
                 self.current_month = "All"
                 index = self.month_filter.findText("All")
@@ -271,12 +314,15 @@ class ContentView(QWidget):
                     self.month_filter.setCurrentIndex(index)
 
                 self.display_transactions_for_current_month()
+                self.fetch_transactions_placeholder.hide()  # Hide placeholder
             else:
                 self.transaction_list.clear()
                 self.transaction_list.addItem(f"Error fetching transactions: {response.status_code}")
+                self.fetch_transactions_placeholder.show()  # Show placeholder
         except Exception as e:
             self.transaction_list.clear()
             self.transaction_list.addItem(f"Error: {str(e)}")
+            self.fetch_transactions_placeholder.show()  # Show placeholder
 
     def group_by_month(self):
         """Group all transactions by month name."""
