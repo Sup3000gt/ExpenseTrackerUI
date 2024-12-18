@@ -26,11 +26,11 @@ class ReportView(QWidget):
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setStyleSheet("""
             QLabel {
-                font-size: 20px;  /* Slightly larger font size for emphasis */
-                font-family: 'Comic Sans MS', sans-serif;  /* Playful and casual font */
-                font-weight: 600;  /* Semi-bold for a subtle emphasis */
-                color: #222;  /* Darker gray for better readability */
-                margin-bottom: 10px;  /* Add some space below the title */
+                font-size: 20px;
+                font-family: 'Comic Sans MS', sans-serif;
+                font-weight: 600;
+                color: #222;
+                margin-bottom: 10px;
             }
         """)
         self.layout.addWidget(self.title_label, alignment=Qt.AlignCenter)
@@ -93,13 +93,20 @@ class ReportView(QWidget):
         self.text_report.setVisible(False)
         self.text_report.setReadOnly(True)
         self.text_report.setMinimumHeight(400)  # increased height
+        self.text_report.setStyleSheet("font-size: 16px;")
         self.layout.addWidget(self.text_report)
+
+        # Initialize the monthly_diff_label once
+        self.monthly_diff_label = QLabel()
+        self.monthly_diff_label.setAlignment(Qt.AlignCenter)
+        self.monthly_diff_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #000;")
+        self.monthly_diff_label.setVisible(False)
+        self.layout.addWidget(self.monthly_diff_label)
 
         # Variables to hold charts
         self.category_chart = None
         self.type_chart = None
         self.monthly_chart = None
-        self.monthly_diff_label = None  # A label to show the difference text
         self.income_chart = None
         self.expense_chart = None
         self.all_categories_text = None
@@ -189,8 +196,11 @@ class ReportView(QWidget):
         self.chart_view.setVisible(False)
         self.chart_selector.setVisible(False)
         self.text_report.setVisible(False)
+        self.monthly_diff_label.setVisible(False)  # Hide the difference label on error
+
         error_label = QLabel(message)
         error_label.setStyleSheet("color: red; font-weight: bold;")
+        error_label.setAlignment(Qt.AlignCenter)
 
         # Clear previous layout items except crucial ones
         for i in reversed(range(self.layout.count())):
@@ -198,7 +208,7 @@ class ReportView(QWidget):
             if item is not None:
                 w = item.widget()
                 if w and w not in [self.title_label, self.monthly_report_button, self.custom_report_button,
-                                   self.chart_selector, self.chart_view, self.text_report]:
+                                   self.chart_selector, self.chart_view, self.text_report, self.monthly_diff_label]:
                     w.setParent(None)
 
         self.layout.addWidget(error_label)
@@ -207,7 +217,7 @@ class ReportView(QWidget):
         self.clear_charts()
 
         if report_type == "monthly":
-            # Just one chart: show Income and Expense as two bars
+            # 月度报告的处理
             income_total = 0.0
             expense_total = 0.0
 
@@ -221,7 +231,7 @@ class ReportView(QWidget):
 
             difference = income_total - expense_total
 
-            # Create a simple bar chart with Income and Expense
+            # 创建条形图
             bar_set = QBarSet("Amounts")
             bar_set.append([income_total, expense_total])
             bar_set.setColor(QColor("#2196F3"))
@@ -243,7 +253,7 @@ class ReportView(QWidget):
 
             axisY = QValueAxis()
             axisY.setTitleText("Amount")
-            axisY.setLabelFormat("$%.0f")  # Show dollar sign, whole number without decimals
+            axisY.setLabelFormat("$%.0f")  # 显示美元符号，无小数
             self.monthly_chart.addAxis(axisY, Qt.AlignLeft)
             series_bar.attachAxis(axisY)
 
@@ -257,53 +267,87 @@ class ReportView(QWidget):
             self.chart_view.setChart(self.monthly_chart)
             self.chart_view.setVisible(True)
 
-            # Show difference with thousand separators and dollar sign
-            self.monthly_diff_label = QLabel(f"Difference (Income - Expense): ${difference:,.2f}")
-            self.monthly_diff_label.setAlignment(Qt.AlignCenter)
-            self.monthly_diff_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #000;")
-            self.layout.addWidget(self.monthly_diff_label)
+            # 更新现有的 monthly_diff_label，而不是创建新的标签
+            self.monthly_diff_label.setText(
+                f"<span style='font-size:16px; font-weight:bold;'>Difference (Income - Expense): </span>"
+                f"<span style='font-size:16px; color:#FF5722;'>${difference:,.2f}</span>")
+            self.monthly_diff_label.setVisible(True)
 
             self.chart_selector.setVisible(False)
             self.text_report.setVisible(False)
 
+
         elif report_type == "custom":
-            # Separate categories by transaction type
+
+            # 隐藏 monthly_diff_label
+
+            self.monthly_diff_label.setVisible(False)
+
+            # 分类处理
+
             income_categories = {}
+
             expense_categories = {}
 
             for txn in data:
+
                 cat = txn.get("category", "Other")
+
                 ttype = txn.get("transactionType", "Expense")
+
                 amt = txn.get("amount", 0.0)
 
                 if ttype.lower() == "income":
+
                     income_categories[cat] = income_categories.get(cat, 0.0) + amt
+
                 else:
+
                     expense_categories[cat] = expense_categories.get(cat, 0.0) + amt
 
-            # Sort categories by amount descending
+            # 排序
+
             income_categories = dict(sorted(income_categories.items(), key=lambda item: item[1], reverse=True))
+
             expense_categories = dict(sorted(expense_categories.items(), key=lambda item: item[1], reverse=True))
 
-            # Show only top 3 categories in the chart
+            # 只显示前3个分类
+
             def top_3_dict(orig_dict):
+
                 return dict(list(orig_dict.items())[:3])
 
             top_income = top_3_dict(income_categories)
+
             top_expense = top_3_dict(expense_categories)
 
-            # Updated text formatting with bullet points, dollar sign, and commas
-            def dict_to_text(d, title):
-                lines = [f"{title}:"]
+            # 使用HTML设置字体大小和样式
+
+            def dict_to_html(d, title):
+                lines = [f"<h2 style='color:#3F51B5; font-size:18px; margin-bottom:4px;'>{title}:</h2>"]  # 调整标题的下边距
+                lines.append("<ul style='font-size:16px; line-height:1.6; margin-top:2px;'>")  # 调整列表的上边距
                 for k, v in d.items():
-                    lines.append(f"- {k}: ${v:,.0f}")
+                    lines.append(f"<li><strong>{k}:</strong> <span style='color:#4CAF50;'>${v:,.0f}</span></li>")
+                lines.append("</ul>")
                 return "\n".join(lines)
 
-            full_text = dict_to_text(income_categories, "All Income Categories") + "\n\n" + dict_to_text(
-                expense_categories, "All Expense Categories")
-            self.text_report.setText(full_text)
+            # 构建完整的HTML文本
 
-            # Function to create a bar chart (top 3 categories only) with dollar formatting
+            full_text = f"""
+
+            <div style='font-family:Helvetica, Arial, sans-serif; padding:10px;'>
+
+                {dict_to_html(income_categories, "All Income Categories")}
+
+                {dict_to_html(expense_categories, "All Expense Categories")}
+
+            </div>
+
+            """
+
+            self.text_report.setHtml(full_text)  # 仅使用 setHtml 设置内容
+
+            # 创建收入和支出的条形图
             def create_bar_chart(title, cat_dict):
                 categories = list(cat_dict.keys())
                 values = list(cat_dict.values())
@@ -328,7 +372,7 @@ class ReportView(QWidget):
 
                 axisY = QValueAxis()
                 axisY.setTitleText("Amount")
-                axisY.setLabelFormat("$%.0f")  # Show dollar sign (no commas built in)
+                axisY.setLabelFormat("$%.0f")  # 显示美元符号
                 axisY.setTickCount(10)
                 chart.addAxis(axisY, Qt.AlignLeft)
                 series.attachAxis(axisY)
@@ -345,12 +389,12 @@ class ReportView(QWidget):
             self.income_chart = create_bar_chart("Distribution by Income Category", top_income)
             self.expense_chart = create_bar_chart("Distribution by Expense Category", top_expense)
 
-            # Show the income chart by default
+            # 默认显示收入图表
             self.chart_view.setChart(self.income_chart)
             self.chart_view.setRenderHint(QPainter.Antialiasing)
             self.chart_view.setVisible(True)
 
-            # Set up combo box for switching charts
+            # 设置组合框用于切换图表
             self.chart_selector.clear()
             self.chart_selector.addItem("Income")
             self.chart_selector.addItem("Expense")
@@ -360,7 +404,6 @@ class ReportView(QWidget):
             self.chart_selector.setCurrentIndex(0)
 
             self.text_report.setVisible(False)
-
     def switch_chart(self, index):
         # 0 = Income, 1 = Expense, 2 = All Categories (Text)
         if index == 0 and self.income_chart:
@@ -380,12 +423,14 @@ class ReportView(QWidget):
         self.category_chart = None
         self.type_chart = None
         self.monthly_chart = None
-        self.monthly_diff_label = None
+        # Do not reset monthly_diff_label here
         self.income_chart = None
         self.expense_chart = None
         self.all_categories_text = None
         self.text_report.setVisible(False)
-
+        # Optionally hide chart view and selector if needed
+        self.chart_view.setVisible(False)
+        self.chart_selector.setVisible(False)
 
 class MonthlyReportDialog(QDialog):
     def __init__(self, parent=None):
@@ -429,7 +474,6 @@ class MonthlyReportDialog(QDialog):
         year = self.year_combo.currentData()
         month = self.month_combo.currentData()
         return year, month
-
 
 class CustomReportDialog(QDialog):
     def __init__(self, parent=None):
