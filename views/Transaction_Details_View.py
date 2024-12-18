@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QGridLayout, QDialog, QDialogButtonBox, QVBoxLayout
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QGridLayout, QDialog, \
+    QDialogButtonBox, QVBoxLayout, QSizePolicy, QScrollArea
 import requests
 
 class TransactionDetailsView(QWidget):
@@ -12,16 +13,17 @@ class TransactionDetailsView(QWidget):
         # Main layout
         main_layout = QVBoxLayout(self)
         main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setSpacing(20)
+        main_layout.setSpacing(40)
 
         # Add the back button at the top-left
         self.add_back_button(main_layout)
 
         # Create a grid layout for the table-like display
         grid_layout = QGridLayout()
-        grid_layout.setHorizontalSpacing(40)
-        grid_layout.setVerticalSpacing(20)
+        grid_layout.setHorizontalSpacing(20)  # You can also reduce this if desired
+        grid_layout.setVerticalSpacing(20)  # Reduced from 20 to 10
         main_layout.addLayout(grid_layout)
+
 
         # Fonts
         label_font = QFont("Arial", 14, QFont.Bold)
@@ -47,29 +49,58 @@ class TransactionDetailsView(QWidget):
             ("Type", transaction_data['transactionType']),
             ("Amount", formatted_amount),
             ("Date", formatted_date),
-            ("Description", transaction_data['description']),
             ("Category", transaction_data['category']),
+            ("Description", transaction_data['description']),
         ]
 
         # Add data to the grid (center-aligned)
         row = 0
+        description_row = None  # We'll store which row the description is on
         for label_text, value_text in details:
             label = QLabel(label_text)
             label.setFont(label_font)
-            label.setStyleSheet("color: #333;")
+            label.setStyleSheet("color: #333; background: transparent;")
             label.setAlignment(Qt.AlignCenter)
 
-            value = QLabel(value_text)
-            value.setFont(value_font)
-            value.setStyleSheet("color: #000;")
-            value.setAlignment(Qt.AlignCenter)
-
             if label_text == "Description":
-                value.setWordWrap(True)
+                # Create a QLabel for the description
+                description_label = QLabel(value_text)
+                description_label.setFont(value_font)
+                description_label.setStyleSheet("color: #000; background: transparent; padding: 10px;")
+                description_label.setWordWrap(True)
 
-            grid_layout.addWidget(label, row, 0, alignment=Qt.AlignCenter)
-            grid_layout.addWidget(value, row, 1, alignment=Qt.AlignCenter)
+                # Wrap the description label in a QScrollArea
+                scroll_area = QScrollArea()
+                scroll_area.setWidgetResizable(True)
+                scroll_area.setWidget(description_label)
+                scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+                scroll_area.setFrameShape(QScrollArea.NoFrame)
+
+                # Make the scroll area background transparent
+                scroll_area.setStyleSheet("QScrollArea { background: transparent; }")
+
+                # Apply size policy to not expand other rows
+                scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+                scroll_area.setFixedHeight(100)  # Only fix the height, not width
+
+                value_widget = scroll_area
+                description_row = row
+            else:
+                # Regular value handling
+                value = QLabel(value_text)
+                value.setFont(value_font)
+                value.setStyleSheet("color: #000; background: transparent;")
+                value.setAlignment(Qt.AlignCenter)
+                value_widget = value
+
+            # Add widgets to the grid layout
+            grid_layout.addWidget(label, row, 0)
+            grid_layout.addWidget(value_widget, row, 1)
             row += 1
+
+        # Explicitly control row stretch to prevent excessive spacing
+        for i in range(row):
+            grid_layout.setRowStretch(i, 0)  # No stretch for rows
 
         # Add the delete button
         self.add_delete_button(main_layout)
