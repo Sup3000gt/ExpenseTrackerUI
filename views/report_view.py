@@ -32,7 +32,7 @@ class ReportView(QWidget):
         """)
         self.layout.addWidget(self.title_label, alignment=Qt.AlignCenter)
 
-        # Vertical layout for buttons
+        # Vertical layout for buttons (Top and bottom arrangement)
         buttons_layout = QVBoxLayout()
 
         self.monthly_report_button = QPushButton("Monthly")
@@ -85,10 +85,11 @@ class ReportView(QWidget):
         self.chart_view.setVisible(False)
         self.layout.addWidget(self.chart_view)
 
-        # A text widget for showing all categories in text form
+        # Make the text report larger to match chart view height and improve readability
         self.text_report = QTextEdit()
         self.text_report.setVisible(False)
         self.text_report.setReadOnly(True)
+        self.text_report.setMinimumHeight(400)  # increased height
         self.layout.addWidget(self.text_report)
 
         # Variables to hold charts
@@ -239,7 +240,7 @@ class ReportView(QWidget):
 
             axisY = QValueAxis()
             axisY.setTitleText("Amount")
-            axisY.setLabelFormat("%.0f")  # whole numbers
+            axisY.setLabelFormat("$%.0f")  # Show dollar sign, whole number without decimals
             self.monthly_chart.addAxis(axisY, Qt.AlignLeft)
             series_bar.attachAxis(axisY)
 
@@ -253,8 +254,8 @@ class ReportView(QWidget):
             self.chart_view.setChart(self.monthly_chart)
             self.chart_view.setVisible(True)
 
-            # Show difference as a label below the chart
-            self.monthly_diff_label = QLabel(f"Difference (Income - Expense): {difference:.2f}")
+            # Show difference with thousand separators and dollar sign
+            self.monthly_diff_label = QLabel(f"Difference (Income - Expense): ${difference:,.2f}")
             self.monthly_diff_label.setAlignment(Qt.AlignCenter)
             self.monthly_diff_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #000;")
             self.layout.addWidget(self.monthly_diff_label)
@@ -283,23 +284,23 @@ class ReportView(QWidget):
 
             # Show only top 3 categories in the chart
             def top_3_dict(orig_dict):
-                # Slice top 3 items
                 return dict(list(orig_dict.items())[:3])
 
             top_income = top_3_dict(income_categories)
             top_expense = top_3_dict(expense_categories)
 
-            # Create a text representation of all categories
+            # Updated text formatting with bullet points, dollar sign, and commas
             def dict_to_text(d, title):
                 lines = [f"{title}:"]
                 for k, v in d.items():
-                    lines.append(f"- {k}: {v:.0f}")
+                    lines.append(f"- {k}: ${v:,.0f}")
                 return "\n".join(lines)
 
-            full_text = dict_to_text(income_categories, "All Income Categories") + "\n\n" + dict_to_text(expense_categories, "All Expense Categories")
+            full_text = dict_to_text(income_categories, "All Income Categories") + "\n\n" + dict_to_text(
+                expense_categories, "All Expense Categories")
             self.text_report.setText(full_text)
 
-            # Function to create a bar chart (top 3 categories only)
+            # Function to create a bar chart (top 3 categories only) with dollar formatting
             def create_bar_chart(title, cat_dict):
                 categories = list(cat_dict.keys())
                 values = list(cat_dict.values())
@@ -324,16 +325,14 @@ class ReportView(QWidget):
 
                 axisY = QValueAxis()
                 axisY.setTitleText("Amount")
-                axisY.setLabelFormat("%.0f")  # whole numbers
+                axisY.setLabelFormat("$%.0f")  # Show dollar sign (no commas built in)
                 axisY.setTickCount(10)
                 chart.addAxis(axisY, Qt.AlignLeft)
                 series.attachAxis(axisY)
 
-                chart.legend().setVisible(True)
-                chart.legend().setAlignment(Qt.AlignBottom)
-
-                # Make the legend more readable (only 1 entry, though)
                 legend = chart.legend()
+                legend.setVisible(True)
+                legend.setAlignment(Qt.AlignBottom)
                 legend.setFont(QFont("Arial", 10, QFont.Bold))
                 legend.setLabelColor("white")
                 legend.setMarkerShape(QLegend.MarkerShapeRectangle)
@@ -352,7 +351,6 @@ class ReportView(QWidget):
             self.chart_selector.clear()
             self.chart_selector.addItem("Income")
             self.chart_selector.addItem("Expense")
-            # Add a third option to show all categories as text
             self.chart_selector.addItem("All Categories")
             self.chart_selector.setVisible(True)
             self.chart_selector.currentIndexChanged.connect(self.switch_chart)
