@@ -26,8 +26,11 @@ class ReportView(QWidget):
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setStyleSheet("""
             QLabel {
-                font-size: 20px;
-                font-weight: 600;
+                font-size: 20px;  /* Slightly larger font size for emphasis */
+                font-family: 'Comic Sans MS', sans-serif;  /* Playful and casual font */
+                font-weight: 600;  /* Semi-bold for a subtle emphasis */
+                color: #222;  /* Darker gray for better readability */
+                margin-bottom: 10px;  /* Add some space below the title */
             }
         """)
         self.layout.addWidget(self.title_label, alignment=Qt.AlignCenter)
