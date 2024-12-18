@@ -24,9 +24,10 @@ class MainWindow(QMainWindow):
         self.subscription_key = TRANSACTION_SERVICE_SUBSCRIPTION_KEY
         self.setFixedSize(480, 600)
 
-        self.main_page = MainPage(self)
-
         if self.jwt_token and is_token_valid(self.jwt_token):
+            self.extract_user_details_from_token()
+            self.show_message_view("Welcome back!")
+        else:
             self.show_main_page()
 
     def save_jwt_token(self, token):
@@ -34,7 +35,6 @@ class MainWindow(QMainWindow):
         self.jwt_token = token
 
     def logout_user(self):
-        """Handle user logout."""
         delete_token()  # Delete the JWT token from keyring
         self.jwt_token = None
         self.show_main_page()
