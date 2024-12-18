@@ -24,14 +24,12 @@ class MainWindow(QMainWindow):
         self.subscription_key = TRANSACTION_SERVICE_SUBSCRIPTION_KEY
         self.setFixedSize(480, 600)
 
+        self.main_page = MainPage(self)
+
         if self.jwt_token and is_token_valid(self.jwt_token):
-            self.extract_user_details_from_token()
-            self.show_message_view("Welcome back!")
-        else:
             self.show_main_page()
 
     def save_jwt_token(self, token):
-        """Save the JWT token securely."""
         save_token(token)
         self.jwt_token = token
 
