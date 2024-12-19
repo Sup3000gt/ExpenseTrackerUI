@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout, QCheckBox
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout, QCheckBox, QFormLayout
 from services.auth_service import login_user
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
@@ -44,48 +44,71 @@ class MainPage(QWidget):
         # Title with word wrapping
         self.title_label = QLabel("Personal Expense Tracker")
         self.title_label.setAlignment(Qt.AlignCenter)  # Center-align horizontally
-        self.title_label.setWordWrap(True)  # Enable word wrapping
         self.title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #555; text-align: center;")
         self.layout.addWidget(self.title_label)
 
-        # Username input
+        # Form layout for aligned inputs
+        form_layout = QFormLayout()
+        form_layout.setLabelAlignment(Qt.AlignRight)
+        form_layout.setFormAlignment(Qt.AlignLeft)
+        form_layout.setSpacing(15)
+
+        # Username field
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Enter username")
+        self.username_input.setFixedSize(280, 40)  # Fixed size for the username input box
         self.username_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
-        self.layout.addWidget(self.username_input)
+        username_label = QLabel("Username:")
+        username_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #555; text-align: center;")
+        form_layout.addRow(username_label, self.username_input)
 
-        # Password input with "Show Password" checkbox
-        self.password_layout = QHBoxLayout()
+        # Connect the returnPressed signal to move focus to password_input
+        self.username_input.returnPressed.connect(self.focus_password_input)
+
+        # Password field with checkbox
+        password_input_layout = QHBoxLayout()
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Enter password")
         self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setFixedSize(280, 40)  # Fixed size for the password input box
         self.password_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
-        self.password_layout.addWidget(self.password_input)
+        password_input_layout.addWidget(self.password_input)
 
-        self.show_password_checkbox = QCheckBox("Show Password")
-        self.show_password_checkbox.setStyleSheet("font-size: 12px;")
-        self.show_password_checkbox.toggled.connect(self.toggle_password_visibility)  # Use toggled signal
-        self.password_layout.addWidget(self.show_password_checkbox)
+        self.show_password_checkbox = QCheckBox()
+        self.show_password_checkbox.setToolTip("Show Password")  # Tooltip for the checkbox
+        self.show_password_checkbox.toggled.connect(self.toggle_password_visibility)
+        password_input_layout.addWidget(self.show_password_checkbox)
 
-        self.layout.addLayout(self.password_layout)
+        password_label = QLabel("Password:")
+        password_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #555; text-align: center;")
+        form_layout.addRow(password_label, password_input_layout)
+
+        # Connect the returnPressed signal to trigger login
+        self.password_input.returnPressed.connect(self.login_user)
+
+        # Add the form layout to the main layout
+        self.layout.addLayout(form_layout)
 
         # Login button
         self.login_button = QPushButton("Login")
         self.login_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #5cb85c; color: white; border-radius: 8px;")
+        self.login_button.setFixedWidth(400)
         self.login_button.clicked.connect(self.login_user)
-        self.layout.addWidget(self.login_button)
+        self.layout.addWidget(self.login_button, alignment=Qt.AlignCenter)
 
         # Register button
         self.register_button = QPushButton("Register")
         self.register_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #0275d8; color: white; border-radius: 8px;")
+        self.register_button.setFixedWidth(400)
         self.register_button.clicked.connect(self.parent.show_register_view)
-        self.layout.addWidget(self.register_button)
+        self.layout.addWidget(self.register_button, alignment=Qt.AlignCenter)
 
         # Forgot Password button
         self.forgot_password_button = QPushButton("Forgot Password")
         self.forgot_password_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #f0ad4e; color: white; border-radius: 8px;")
+        self.forgot_password_button.setFixedWidth(400)
         self.forgot_password_button.clicked.connect(self.parent.show_forgot_password_view)
-        self.layout.addWidget(self.forgot_password_button)
+        self.layout.addWidget(self.forgot_password_button, alignment=Qt.AlignCenter)
 
         # Feedback label
         self.feedback_label = QLabel("")
@@ -103,6 +126,10 @@ class MainPage(QWidget):
         self.text_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #555; text-align: center;")
         self.layout.addWidget(self.text_label, alignment=Qt.AlignCenter)
 
+    def focus_password_input(self):
+        """Set focus to the password input field."""
+        self.password_input.setFocus()
+
     def toggle_password_visibility(self, checked):
         if checked:
             self.password_input.setEchoMode(QLineEdit.Normal)
@@ -111,7 +138,6 @@ class MainPage(QWidget):
 
     def login_user(self):
         """Handle user login with a loading spinner on the button."""
-        print("Login button clicked, processing login...")
         username = self.username_input.text().strip()
         password = self.password_input.text().strip()
 
@@ -135,7 +161,6 @@ class MainPage(QWidget):
         if success:
             user_id, username = self.get_user_details_from_token(token)
             if user_id and username:
-                # 将登录结果传递给 MainWindow 的 on_login_result 方法
                 self.parent.on_login_result(user_id, username, token)
             else:
                 self.feedback_label.setText("Failed to decode user details from token.")
