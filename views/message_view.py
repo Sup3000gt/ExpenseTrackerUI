@@ -52,6 +52,10 @@ class MessageView(QWidget):
         """)
         self.layout.addWidget(self.return_button, alignment=Qt.AlignCenter)
 
+    def set_message(self, message):
+        """Update the displayed message."""
+        self.message_label.setText(message)
+
     def return_to_main_page(self):
         """Return to the main page."""
         self.parent.show_main_page()
