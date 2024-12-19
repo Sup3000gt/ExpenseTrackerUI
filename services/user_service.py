@@ -1,5 +1,9 @@
+import logging
 import requests
 from appconfig import USER_BASE_API_URL, USER_SERVICE_SUBSCRIPTION_KEY
+
+logger = logging.getLogger(__name__)
+
 
 def register_user(data):
     """
@@ -16,10 +20,15 @@ def register_user(data):
         "Content-Type": "application/json",
         "Ocp-Apim-Subscription-Key": USER_SERVICE_SUBSCRIPTION_KEY
     }
+
     try:
+        logger.debug(f"Sending registration request to {api_url} with data: {data}")
         response = requests.post(api_url, headers=headers, json=data)
         if response.status_code == 200:
+            logger.info("User registration successful.")
             return True, "Registration Successful"
+        logger.warning(f"User registration failed with status code {response.status_code}: {response.text}")
         return False, f"Error: {response.text}"
     except requests.exceptions.RequestException as e:
+        logger.error(f"An error occurred during user registration: {e}")
         return False, f"Error: {e}"

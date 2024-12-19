@@ -1,3 +1,4 @@
+# main.py
 import logging
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from views.Transaction_Details_View import TransactionDetailsView
@@ -12,16 +13,10 @@ from views.user_profile_view import UserProfileView
 from utils.storage_utils import save_token, load_token, delete_token
 from utils.jwt_utils import is_token_valid
 from appconfig import TRANSACTION_SERVICE_SUBSCRIPTION_KEY
+import logging_config
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("app.log"),
-        logging.StreamHandler()
-    ]
-)
+# Initialize centralized logging
+logging_config.setup_logging()
 logger = logging.getLogger(__name__)
 
 
