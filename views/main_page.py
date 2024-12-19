@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout, QCheckBox
 from services.auth_service import login_user
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
@@ -54,12 +54,20 @@ class MainPage(QWidget):
         self.username_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
         self.layout.addWidget(self.username_input)
 
-        # Password input
+        # Password input with "Show Password" checkbox
+        self.password_layout = QHBoxLayout()
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Enter password")
         self.password_input.setEchoMode(QLineEdit.Password)
         self.password_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
-        self.layout.addWidget(self.password_input)
+        self.password_layout.addWidget(self.password_input)
+
+        self.show_password_checkbox = QCheckBox("Show Password")
+        self.show_password_checkbox.setStyleSheet("font-size: 12px;")
+        self.show_password_checkbox.toggled.connect(self.toggle_password_visibility)  # Use toggled signal
+        self.password_layout.addWidget(self.show_password_checkbox)
+
+        self.layout.addLayout(self.password_layout)
 
         # Login button
         self.login_button = QPushButton("Login")
@@ -94,6 +102,12 @@ class MainPage(QWidget):
         self.text_label = QLabel("Microsoft Software and Systems Academy", self)
         self.text_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #555; text-align: center;")
         self.layout.addWidget(self.text_label, alignment=Qt.AlignCenter)
+
+    def toggle_password_visibility(self, checked):
+        if checked:
+            self.password_input.setEchoMode(QLineEdit.Normal)
+        else:
+            self.password_input.setEchoMode(QLineEdit.Password)
 
     def login_user(self):
         """Handle user login with a loading spinner on the button."""
@@ -160,10 +174,13 @@ class MainPage(QWidget):
         spinner_path = os.path.join(os.getcwd(), "assets", "spinner.gif")
         print(f"Spinner GIF Path: {spinner_path}")
 
-        self.spinner_movie = QMovie(spinner_path)
-        self.spinner_label.setMovie(self.spinner_movie)
-        self.spinner_movie.start()
-        self.spinner_label.show()
+        if not os.path.exists(spinner_path):
+            print("Spinner GIF not found. Please ensure the path is correct.")
+        else:
+            self.spinner_movie = QMovie(spinner_path)
+            self.spinner_label.setMovie(self.spinner_movie)
+            self.spinner_movie.start()
+            self.spinner_label.show()
 
         # Disable the button to prevent multiple clicks
         self.login_button.setDisabled(True)
@@ -171,7 +188,8 @@ class MainPage(QWidget):
     def hide_loading_animation_on_button(self):
         """Remove the spinning icon from the Login button."""
         if hasattr(self, "spinner_label") and self.spinner_label:
-            self.spinner_movie.stop()
+            if hasattr(self, "spinner_movie") and self.spinner_movie:
+                self.spinner_movie.stop()
             self.spinner_label.deleteLater()
             self.spinner_label = None
 
