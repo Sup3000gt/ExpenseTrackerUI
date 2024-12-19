@@ -1,36 +1,47 @@
+import requests
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QFont
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout, QGridLayout, QDialog, \
-    QDialogButtonBox, QVBoxLayout, QSizePolicy, QScrollArea
-import requests
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton, QDialog, QDialogButtonBox, QHBoxLayout, QSizePolicy, \
+    QScrollArea, QGridLayout, QWidget
+
 
 class TransactionDetailsView(QWidget):
     def __init__(self, parent, transaction_data):
         super().__init__()
         self.parent = parent
         self.transaction_data = transaction_data
+        self.init_ui()
 
+    def init_ui(self):
         # Main layout
-        main_layout = QVBoxLayout(self)
-        main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setSpacing(40)
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setAlignment(Qt.AlignTop)
+        self.main_layout.setSpacing(40)
 
         # Add the back button at the top-left
-        self.add_back_button(main_layout)
+        self.add_back_button(self.main_layout)
 
         # Create a grid layout for the table-like display
-        grid_layout = QGridLayout()
-        grid_layout.setHorizontalSpacing(20)  # You can also reduce this if desired
-        grid_layout.setVerticalSpacing(20)  # Reduced from 20 to 10
-        main_layout.addLayout(grid_layout)
-
+        self.grid_layout = QGridLayout()
+        self.grid_layout.setHorizontalSpacing(20)
+        self.grid_layout.setVerticalSpacing(20)
+        self.main_layout.addLayout(self.grid_layout)
 
         # Fonts
-        label_font = QFont("Arial", 14, QFont.Bold)
-        value_font = QFont("Arial", 14)
+        self.label_font = QFont("Arial", 14, QFont.Bold)
+        self.value_font = QFont("Arial", 14)
 
+        # Initialize UI elements
+        self.labels = {}
+        self.values = {}
+        self.create_ui_elements()
+
+        # Add the delete button
+        self.add_delete_button(self.main_layout)
+
+    def create_ui_elements(self):
         # Format date as YYYY/MM/DD
-        raw_date = transaction_data['date']
+        raw_date = self.transaction_data.get('date', '')
         if 'T' in raw_date:
             raw_date = raw_date.split('T')[0]
         date_parts = raw_date.split('-')
@@ -40,32 +51,35 @@ class TransactionDetailsView(QWidget):
             formatted_date = raw_date
 
         # Format the amount with commas (e.g. $8,000)
-        amount = float(transaction_data['amount'])
-        formatted_amount = f"${amount:,.0f}"  # no decimals if .00
+        try:
+            amount = float(self.transaction_data.get('amount', 0))
+            formatted_amount = f"${amount:,.0f}"  # no decimals if .00
+        except ValueError:
+            formatted_amount = self.transaction_data.get('amount', 'N/A')
 
         # Transaction data mapping
         details = [
-            ("Transaction ID", str(transaction_data['id'])),
-            ("Type", transaction_data['transactionType']),
+            ("Transaction ID", str(self.transaction_data.get('id', 'N/A'))),
+            ("Type", self.transaction_data.get('transactionType', 'N/A')),
             ("Amount", formatted_amount),
             ("Date", formatted_date),
-            ("Category", transaction_data['category']),
-            ("Description", transaction_data['description']),
+            ("Category", self.transaction_data.get('category', 'N/A')),
+            ("Description", self.transaction_data.get('description', 'N/A')),
         ]
 
         # Add data to the grid (center-aligned)
+        self.widgets = {}
         row = 0
-        description_row = None  # We'll store which row the description is on
         for label_text, value_text in details:
             label = QLabel(label_text)
-            label.setFont(label_font)
+            label.setFont(self.label_font)
             label.setStyleSheet("color: #333; background: transparent;")
             label.setAlignment(Qt.AlignCenter)
 
             if label_text == "Description":
                 # Create a QLabel for the description
                 description_label = QLabel(value_text)
-                description_label.setFont(value_font)
+                description_label.setFont(self.value_font)
                 description_label.setStyleSheet("color: #000; background: transparent; padding: 10px;")
                 description_label.setWordWrap(True)
 
@@ -84,26 +98,25 @@ class TransactionDetailsView(QWidget):
                 scroll_area.setFixedHeight(100)  # Only fix the height, not width
 
                 value_widget = scroll_area
-                description_row = row
             else:
                 # Regular value handling
                 value = QLabel(value_text)
-                value.setFont(value_font)
+                value.setFont(self.value_font)
                 value.setStyleSheet("color: #000; background: transparent;")
                 value.setAlignment(Qt.AlignCenter)
                 value_widget = value
 
+            # Store references for updating
+            self.widgets[label_text] = value_widget
+
             # Add widgets to the grid layout
-            grid_layout.addWidget(label, row, 0)
-            grid_layout.addWidget(value_widget, row, 1)
+            self.grid_layout.addWidget(label, row, 0)
+            self.grid_layout.addWidget(value_widget, row, 1)
             row += 1
 
         # Explicitly control row stretch to prevent excessive spacing
         for i in range(row):
-            grid_layout.setRowStretch(i, 0)  # No stretch for rows
-
-        # Add the delete button
-        self.add_delete_button(main_layout)
+            self.grid_layout.setRowStretch(i, 0)  # No stretch for rows
 
     def add_back_button(self, main_layout):
         """Add a modern back button with an arrow to return to the content view."""
@@ -187,7 +200,7 @@ class TransactionDetailsView(QWidget):
         layout.addWidget(buttons)
 
         if dialog.exec() == QDialog.Accepted:
-            self.delete_transaction(self.transaction_data['id'])
+            self.delete_transaction(self.transaction_data.get('id'))
 
     def delete_transaction(self, transaction_id):
         """Send a DELETE request to the API to delete the transaction."""
@@ -273,3 +286,47 @@ class TransactionDetailsView(QWidget):
         layout.addWidget(ok_button, alignment=Qt.AlignCenter)
 
         dialog.exec()
+
+    def update_data(self, new_transaction_data):
+        """
+        Update the transaction data and refresh the UI elements.
+        This method allows the view to be updated with new data without recreating the entire widget.
+        """
+        self.transaction_data = new_transaction_data
+
+        # Update formatted date
+        raw_date = self.transaction_data.get('date', '')
+        if 'T' in raw_date:
+            raw_date = raw_date.split('T')[0]
+        date_parts = raw_date.split('-')
+        if len(date_parts) == 3:
+            formatted_date = f"{date_parts[0]}/{date_parts[1]}/{date_parts[2]}"
+        else:
+            formatted_date = raw_date
+
+        # Update formatted amount
+        try:
+            amount = float(self.transaction_data.get('amount', 0))
+            formatted_amount = f"${amount:,.0f}"
+        except ValueError:
+            formatted_amount = self.transaction_data.get('amount', 'N/A')
+
+        # Mapping of labels to their corresponding updated values
+        updated_values = {
+            "Transaction ID": str(self.transaction_data.get('id', 'N/A')),
+            "Type": self.transaction_data.get('transactionType', 'N/A'),
+            "Amount": formatted_amount,
+            "Date": formatted_date,
+            "Category": self.transaction_data.get('category', 'N/A'),
+            "Description": self.transaction_data.get('description', 'N/A'),
+        }
+
+        # Update each label in the UI
+        for label_text, new_value in updated_values.items():
+            widget = self.widgets.get(label_text)
+            if isinstance(widget, QScrollArea):
+                # For Description, update the inner QLabel
+                inner_label = widget.widget()
+                inner_label.setText(new_value)
+            elif isinstance(widget, QLabel):
+                widget.setText(new_value)

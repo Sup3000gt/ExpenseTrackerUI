@@ -49,7 +49,7 @@ class MainWindow(QMainWindow):
 
         if self.jwt_token:
             print("Clearing any pre-existing tokens...")
-            delete_token()  # 强制清除旧 token
+            delete_token()
             self.jwt_token = None
 
         if self.jwt_token and is_token_valid(self.jwt_token):
@@ -99,8 +99,6 @@ class MainWindow(QMainWindow):
 
     def show_content_view(self):
         if not self.views["content_view"]:
-            print("ContentView not initialized. Initializing now...")
-            print(f"Parent type: {type(self)}")  # 确保父类是 MainWindow
             self.views["content_view"] = ContentView(self, user_id=self.user_id, username=self.username)
             self.stacked_widget.addWidget(self.views["content_view"])
         self.stacked_widget.setCurrentWidget(self.views["content_view"])
