@@ -1,4 +1,3 @@
-# main.py
 import logging
 from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
 from views.Transaction_Details_View import TransactionDetailsView
@@ -206,14 +205,6 @@ class MainWindow(QMainWindow):
             self.views["user_profile_view"].reset_fields_state()
             logger.debug("UserProfileView fields reset.")
         self.switch_to_view("user_profile_view")
-
-    # def extract_user_details_from_token(self):
-    #     """Extract and store user details from the JWT token."""
-    #     # Assuming decode_jwt is a utility function that decodes JWT tokens.
-    #     payload = decode_jwt(self.jwt_token)
-    #     self.user_id = payload.get("userId")
-    #     self.username = payload.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
-
 
 def main():
     logger.info("Starting the Expense Tracker application.")
