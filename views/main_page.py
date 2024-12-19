@@ -66,7 +66,7 @@ class MainPage(QWidget):
         # Username field
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Enter username")
-        self.username_input.setFixedSize(260, 40)  # Fixed size for the username input box
+        self.username_input.setFixedSize(260, 45)  # Fixed size for the username input box
         self.username_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
         username_label = QLabel("Username:")
         username_label.setStyleSheet(
@@ -82,7 +82,7 @@ class MainPage(QWidget):
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Enter password")
         self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setFixedSize(260, 40)  # Fixed size for the password input box
+        self.password_input.setFixedSize(260, 45)  # Fixed size for the password input box
         self.password_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
         password_input_layout.addWidget(self.password_input)
 
