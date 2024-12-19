@@ -1,10 +1,11 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QDateEdit, \
     QMessageBox, QTextEdit, QDialog
-from PySide6.QtCore import Qt, QDate, QLocale
+from PySide6.QtCore import Qt, QDate, QLocale, Signal
 import requests
 
 
 class AddTransactionView(QWidget):
+    transaction_added = Signal()
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -168,6 +169,7 @@ class AddTransactionView(QWidget):
             response = requests.post(api_url, json=transaction_data, headers=headers)
             if response.status_code == 200:
                 self.show_success_message()
+                self.transaction_added.emit()
                 self.parent.show_content_view()  # Redirect to the content page
             else:
                 QMessageBox.warning(self, "Error", f"Failed to add transaction: {response.status_code}")

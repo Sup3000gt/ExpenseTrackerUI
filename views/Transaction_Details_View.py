@@ -1,11 +1,12 @@
 import requests
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import Qt, QSize, Signal
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton, QDialog, QDialogButtonBox, QHBoxLayout, QSizePolicy, \
     QScrollArea, QGridLayout, QWidget
 
 
 class TransactionDetailsView(QWidget):
+    transaction_deleted = Signal(int)
     def __init__(self, parent, transaction_data):
         super().__init__()
         self.parent = parent
@@ -209,6 +210,7 @@ class TransactionDetailsView(QWidget):
             response = requests.delete(url)
             if response.status_code == 200:
                 self.show_success_dialog("Transaction deleted successfully.")
+                self.transaction_deleted.emit(transaction_id)
                 self.parent.show_content_view()  # Go back to the previous view
             else:
                 self.show_error_dialog(f"Failed to delete transaction: {response.text}")

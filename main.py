@@ -69,10 +69,15 @@ class MainWindow(QMainWindow):
         self.show_main_page()
 
     def switch_to_view(self, view_name):
-        """Switch to a specific view."""
+        """Switch to a specific view and connect signals dynamically."""
         if view_name in self.views:
             view = self.views[view_name]
             if view:
+                # Dynamically connect signals for specific views
+                if view_name == "add_transaction_view" and isinstance(view, AddTransactionView):
+                    # Connect the transaction_added signal to ContentView's fetch_all_transactions
+                    view.transaction_added.connect(self.views["content_view"].fetch_all_transactions)
+
                 self.stacked_widget.setCurrentWidget(view)
             else:
                 print(f"View '{view_name}' is not initialized.")
@@ -129,9 +134,13 @@ class MainWindow(QMainWindow):
     def show_transaction_details_view(self, transaction_data):
         if not self.views["transaction_details_view"]:
             self.views["transaction_details_view"] = TransactionDetailsView(self, transaction_data)
+            self.views["transaction_details_view"].transaction_deleted.connect(
+                self.views["content_view"].fetch_all_transactions
+            )  # Connect the signal
             self.stacked_widget.addWidget(self.views["transaction_details_view"])
         else:
-            self.views["transaction_details_view"].update_data(transaction_data)  # Assuming update_data refreshes data
+            self.views["transaction_details_view"].update_data(transaction_data)
+
         self.switch_to_view("transaction_details_view")
 
     def show_report_view(self):
