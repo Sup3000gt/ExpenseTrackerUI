@@ -1,17 +1,22 @@
+import logging
+import requests
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QDateEdit, \
     QMessageBox, QTextEdit, QDialog
 from PySide6.QtCore import Qt, QDate, QLocale, Signal
-import requests
+
+
+logger = logging.getLogger(__name__)
 
 
 class AddTransactionView(QWidget):
     transaction_added = Signal()
+
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
 
         self.layout = QVBoxLayout(self)
-        self.layout.setSpacing(10)  # Adjusted spacing between fields
+        self.layout.setSpacing(10)
         self.layout.setContentsMargins(20, 20, 20, 20)
 
         # Title
@@ -19,11 +24,11 @@ class AddTransactionView(QWidget):
         self.title_label.setAlignment(Qt.AlignCenter)
         self.title_label.setStyleSheet("""
             QLabel {
-                font-size: 20px;  /* Slightly larger font size for emphasis */
-                font-family: 'Comic Sans MS', sans-serif;  /* Playful and casual font */
-                font-weight: 600;  /* Semi-bold for a subtle emphasis */
-                color: #222;  /* Darker gray for better readability */
-                margin-bottom: 10px;  /* Add some space below the title */
+                font-size: 20px;
+                font-family: 'Comic Sans MS', sans-serif;
+                font-weight: 600;
+                color: #222;
+                margin-bottom: 10px;
             }
         """)
         self.layout.addWidget(self.title_label)
@@ -48,7 +53,6 @@ class AddTransactionView(QWidget):
         self.category_combobox.setStyleSheet("padding: 5px; font-size: 14px;")
         self.layout.addWidget(self.category_combobox)
 
-        # Initialize category options
         self.update_category_options(self.type_combobox.currentText())
 
         # Amount
@@ -83,7 +87,7 @@ class AddTransactionView(QWidget):
                 border-left: 1px solid #ccc;
             }
         """)
-        self.date_input.setLocale(QLocale(QLocale.English))  # Set locale after creating the widget
+        self.date_input.setLocale(QLocale(QLocale.English))
         self.layout.addWidget(self.date_input)
 
         # Description
@@ -91,16 +95,15 @@ class AddTransactionView(QWidget):
         self.description_label.setStyleSheet("font-size: 14px;")
         self.layout.addWidget(self.description_label)
 
-        self.description_input = QTextEdit()  # Changed to QTextEdit for larger input
+        self.description_input = QTextEdit()
         self.description_input.setPlaceholderText("Enter description")
         self.description_input.setStyleSheet("padding: 5px; font-size: 14px;")
-        self.description_input.setFixedHeight(100)  # Increased height for more input space
+        self.description_input.setFixedHeight(100)
         self.layout.addWidget(self.description_input)
 
-        # Buttons (Horizontal Layout)
+        # Buttons
         self.buttons_layout = QHBoxLayout()
 
-        # Add Transaction Button
         self.add_button = QPushButton("Add Transaction")
         self.add_button.setStyleSheet("""
             QPushButton {
@@ -117,7 +120,6 @@ class AddTransactionView(QWidget):
         self.add_button.clicked.connect(self.add_transaction)
         self.buttons_layout.addWidget(self.add_button)
 
-        # Cancel Button
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setStyleSheet("""
             QPushButton {
@@ -134,7 +136,7 @@ class AddTransactionView(QWidget):
         self.cancel_button.clicked.connect(self.cancel)
         self.buttons_layout.addWidget(self.cancel_button)
 
-        self.layout.addLayout(self.buttons_layout)  # Add buttons to the main layout
+        self.layout.addLayout(self.buttons_layout)
 
     def update_category_options(self, transaction_type):
         """Update category options based on the selected transaction type."""
@@ -150,12 +152,19 @@ class AddTransactionView(QWidget):
 
     def add_transaction(self):
         """Send the transaction data to the API and handle the response."""
+        try:
+            amount = float(self.amount_input.text())
+        except ValueError:
+            QMessageBox.warning(self, "Input Error", "Please enter a valid amount.")
+            logger.warning("Invalid amount entered.")
+            return
+
         transaction_data = {
             "userId": self.parent.user_id,
             "transactionType": self.type_combobox.currentText(),
-            "amount": float(self.amount_input.text()),
+            "amount": amount,
             "date": self.date_input.date().toString("yyyy-MM-dd"),
-            "description": self.description_input.toPlainText(),  # Get full text from QTextEdit
+            "description": self.description_input.toPlainText(),
             "category": self.category_combobox.currentText()
         }
 
@@ -165,20 +174,24 @@ class AddTransactionView(QWidget):
             "Ocp-Apim-Subscription-Key": self.parent.subscription_key
         }
 
+        logger.debug(f"Sending transaction data to {api_url}: {transaction_data}")
+
         try:
             response = requests.post(api_url, json=transaction_data, headers=headers)
             if response.status_code == 200:
+                logger.info("Transaction added successfully.")
                 self.show_success_message()
                 self.transaction_added.emit()
-                self.parent.show_content_view()  # Redirect to the content page
+                self.parent.show_content_view()
             else:
+                logger.warning(f"Failed to add transaction: {response.status_code} - {response.text}")
                 QMessageBox.warning(self, "Error", f"Failed to add transaction: {response.status_code}")
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
+            logger.error(f"An error occurred while adding transaction: {e}")
             QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
 
     def show_success_message(self):
-        """Display a modern styled success message dialog with a centered button."""
-        # Create a custom dialog
+        """Display a success message dialog."""
         dialog = QDialog(self)
         dialog.setWindowTitle("Success")
         dialog.setStyleSheet("""
@@ -203,38 +216,36 @@ class AddTransactionView(QWidget):
             }
         """)
 
-        # Create a vertical layout
         layout = QVBoxLayout(dialog)
         layout.setContentsMargins(20, 20, 20, 20)
         layout.setSpacing(20)
 
-        # Add a success message
         message_label = QLabel("Transaction added successfully!")
         message_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(message_label)
 
-        # Add the OK button
         ok_button = QPushButton("OK")
         ok_button.setFixedSize(100, 40)
-        ok_button.clicked.connect(dialog.accept)  # Close the dialog when clicked
+        ok_button.clicked.connect(dialog.accept)
         ok_button.setStyleSheet("""
-            QPushButton {
-                background-color: #28a745;
-                color: white;
-                font-size: 14px;
-                padding: 6px 12px;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #218838;
-            }
-        """)
-        layout.addWidget(ok_button, alignment=Qt.AlignCenter)  # Center the button
+             QPushButton {
+                 background-color: #28a745;
+                 color: white;
+                 font-size: 14px;
+                 padding: 6px 12px;
+                 border-radius: 4px;
+             }
+             QPushButton:hover {
+                 background-color: #218838;
+             }
+         """)
+        layout.addWidget(ok_button, alignment=Qt.AlignCenter)
 
-        # Set the layout and show the dialog
+        logger.debug("Displaying success message dialog.")
         dialog.setLayout(layout)
         dialog.exec()
 
     def cancel(self):
         """Handle the cancel action and redirect to the content view."""
+        logger.info("Cancel action triggered. Redirecting to content view.")
         self.parent.show_content_view()

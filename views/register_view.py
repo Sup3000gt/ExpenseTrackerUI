@@ -1,10 +1,16 @@
 import re
-from PySide6.QtCore import Qt, QThread, Signal
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QScrollArea
-from PySide6.QtGui import QMovie, QIcon
-from PySide6.QtCore import QSize
 import os
+import logging
+from PySide6.QtCore import Qt, QThread, Signal, QSize
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
+    QHBoxLayout, QScrollArea
+)
+from PySide6.QtGui import QMovie, QIcon
 from services.user_service import register_user
+
+logger = logging.getLogger(__name__)
+
 
 class RegisterThread(QThread):
     """Thread for handling the registration API call."""
@@ -19,6 +25,7 @@ class RegisterThread(QThread):
         self.register_result.emit(success, message)
 
 class RegisterView(QWidget):
+    """View for user registration."""
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
@@ -64,7 +71,6 @@ class RegisterView(QWidget):
         self.layout.setSpacing(15)
         self.layout.setContentsMargins(20, 20, 20, 20)
 
-        # Add Back button
         self.add_back_button()
 
         # Add input fields
@@ -111,37 +117,36 @@ class RegisterView(QWidget):
         main_layout.addWidget(scroll_area)
 
     def add_back_button(self):
-        """Add a modern back button with an arrow to return to the main page."""
+        """Add a back button to return to the main page."""
         back_button = QPushButton()
         back_button.setIcon(QIcon("assets/left-arrow.png"))
         back_button.setIconSize(QSize(30, 30))
         back_button.setStyleSheet("""
             QPushButton {
-                background-color: transparent;  /* Transparent background */
-                border: none;  /* No border for flat design */
+                background-color: transparent;
+                border: none;
                 padding: 5px;
             }
             QPushButton:hover {
-                background-color: rgba(0, 0, 0, 0.05);  /* Light hover effect */
-                border-radius: 12px;  /* Rounded corners for hover */
+                background-color: rgba(0, 0, 0, 0.05);
+                border-radius: 12px;
             }
         """)
         back_button.clicked.connect(self.parent.show_main_page)
 
-        # Add to a horizontal layout to align it to the left
         back_button_layout = QHBoxLayout()
         back_button_layout.addWidget(back_button)
-        back_button_layout.setAlignment(Qt.AlignLeft)  # Align to the left
+        back_button_layout.setAlignment(Qt.AlignLeft)
         self.layout.addLayout(back_button_layout)
 
     def add_input_field(self, label_text, password=False, placeholder=None):
-        """Add an input field with a modern style."""
+        """Add a styled input field with a label."""
         label = QLabel(label_text)
         label.setStyleSheet("font-size: 14px; color: #555; font-weight: bold;")
         self.layout.addWidget(label)
 
         input_field = QLineEdit()
-        if placeholder:  # Only set placeholder if provided
+        if placeholder:
             input_field.setPlaceholderText(placeholder)
         input_field.setStyleSheet("""
             QLineEdit {
@@ -166,19 +171,18 @@ class RegisterView(QWidget):
         return input_field
 
     def show_loading_animation_on_button(self):
-        """Show a spinning icon on the Register button."""
+        """Display a loading spinner on the Register button and disable it."""
         self.register_button.setText("")
         self.spinner_label = QLabel(self.register_button)
         self.spinner_label.setFixedSize(20, 20)
         self.spinner_label.setAlignment(Qt.AlignCenter)
 
-        # Position the spinner inside the button
+        # Position the spinner at the center of the button
         self.spinner_label.move(
             (self.register_button.width() // 2) - 10,
             (self.register_button.height() // 2) - 10
         )
 
-        # Load and start the spinner animation
         spinner_path = os.path.join(os.getcwd(), "assets", "spinner.gif")
         self.spinner_movie = QMovie(spinner_path)
         self.spinner_label.setMovie(self.spinner_movie)
@@ -189,7 +193,7 @@ class RegisterView(QWidget):
         self.register_button.setDisabled(True)
 
     def hide_loading_animation_on_button(self):
-        """Remove the spinning icon from the Register button."""
+        """Hide the loading spinner and enable the Register button."""
         if hasattr(self, "spinner_label") and self.spinner_label:
             self.spinner_movie.stop()
             self.spinner_label.deleteLater()
@@ -199,8 +203,7 @@ class RegisterView(QWidget):
         self.register_button.setDisabled(False)
 
     def register_user(self):
-        """Handle user registration."""
-        """Handle user registration with a loading spinner."""
+        """Collect user input, validate, and initiate registration."""
         data = {
             "username": self.username_input.text().strip(),
             "passwordHash": self.password_input.text().strip(),
@@ -211,7 +214,7 @@ class RegisterView(QWidget):
             "dateOfBirth": self.date_of_birth_input.text().strip(),
         }
 
-        # Client-side validation
+        # Validate that all fields are filled
         if not all(data.values()):
             self.feedback_label.setText("All fields are required.")
             return
@@ -227,20 +230,19 @@ class RegisterView(QWidget):
             self.feedback_label.setText("Phone number must be exactly 10 digits.")
             return
 
-        # Show spinner on the Register button
+        # Show loading spinner and start the registration thread
         self.show_loading_animation_on_button()
-        # Start the register thread
         self.register_thread = RegisterThread(data)
-        self.register_thread.register_result.connect(self.on_register_result)  # Connect the result signal
+        self.register_thread.register_result.connect(self.on_register_result)
         self.register_thread.start()
 
     def on_register_result(self, success, message):
-        """Handle the result of the register API call."""
+        """Process the result of the registration attempt."""
         self.hide_loading_animation_on_button()
 
         if success:
-            self.parent.show_message_view("Registration Successful! Please check your email to activate your account")
+            self.parent.show_message_view(
+                "Registration Successful! Please check your email to activate your account"
+            )
         else:
             self.feedback_label.setText(message)
-
-

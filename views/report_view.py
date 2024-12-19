@@ -1,25 +1,26 @@
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout,
-                               QDialog, QDialogButtonBox, QFormLayout, QComboBox, QTextEdit, QToolButton)
-from PySide6.QtCore import Qt, QDate, QSize
-from PySide6.QtCharts import QChart, QChartView, QPieSeries, QLegend, QBarCategoryAxis, QBarSeries, QBarSet, QValueAxis
-from PySide6.QtGui import QPainter, QColor, QFont, QIcon
+import logging
 import requests
-import json
+from PySide6.QtWidgets import (QWidget, QVBoxLayout, QLabel, QPushButton, QHBoxLayout,
+                               QDialog, QDialogButtonBox, QFormLayout, QComboBox, QTextEdit)
+from PySide6.QtCore import Qt, QDate, QSize
+from PySide6.QtCharts import QChart, QChartView, QLegend, QBarCategoryAxis, QBarSeries, QBarSet, QValueAxis
+from PySide6.QtGui import QPainter, QColor, QFont, QIcon
 import calendar
 
+logger = logging.getLogger(__name__)
+
+
 class ReportView(QWidget):
+    """View for generating and displaying reports."""
+
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent
 
-        # Main layout for the ReportView
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
-        # Add the back button at the top
         self.add_back_button(self.layout)
-
-        # Add a stretch to center content vertically
         self.layout.addStretch()
 
         self.title_label = QLabel("Generate Reports")
@@ -35,7 +36,6 @@ class ReportView(QWidget):
         """)
         self.layout.addWidget(self.title_label, alignment=Qt.AlignCenter)
 
-        # Vertical layout for buttons (Top and bottom arrangement)
         buttons_layout = QVBoxLayout()
 
         self.monthly_report_button = QPushButton("Monthly")
@@ -73,37 +73,30 @@ class ReportView(QWidget):
         buttons_layout.addWidget(self.custom_report_button, alignment=Qt.AlignCenter)
 
         self.layout.addLayout(buttons_layout)
-
-        # Another stretch to center vertically
         self.layout.addStretch()
 
-        # A combo box to switch charts (hidden by default)
         self.chart_selector = QComboBox()
         self.chart_selector.setVisible(False)
         self.layout.addWidget(self.chart_selector)
 
-        # Create a chart view to display the selected chart
         self.chart_view = QChartView()
         self.chart_view.setRenderHint(QPainter.Antialiasing)
         self.chart_view.setVisible(False)
         self.layout.addWidget(self.chart_view)
 
-        # Make the text report larger to match chart view height and improve readability
         self.text_report = QTextEdit()
         self.text_report.setVisible(False)
         self.text_report.setReadOnly(True)
-        self.text_report.setMinimumHeight(400)  # increased height
+        self.text_report.setMinimumHeight(400)
         self.text_report.setStyleSheet("font-size: 16px;")
         self.layout.addWidget(self.text_report)
 
-        # Initialize the monthly_diff_label once
         self.monthly_diff_label = QLabel()
         self.monthly_diff_label.setAlignment(Qt.AlignCenter)
         self.monthly_diff_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #000;")
         self.monthly_diff_label.setVisible(False)
         self.layout.addWidget(self.monthly_diff_label)
 
-        # Variables to hold charts
         self.category_chart = None
         self.type_chart = None
         self.monthly_chart = None
@@ -112,7 +105,7 @@ class ReportView(QWidget):
         self.all_categories_text = None
 
     def add_back_button(self, main_layout):
-        """Add a modern back button with an arrow to return to the content view."""
+        """Add a back button to return to the content view."""
         back_button = QPushButton()
         back_button.setIcon(QIcon("assets/left-arrow.png"))
         back_button.setIconSize(QSize(30, 30))
@@ -135,18 +128,21 @@ class ReportView(QWidget):
         main_layout.addLayout(back_button_layout)
 
     def generate_monthly_report(self):
+        """Open dialog to select month and year for the monthly report."""
         dialog = MonthlyReportDialog(self)
         if dialog.exec() == QDialog.Accepted:
             year, month = dialog.get_year_month()
             self.fetch_monthly_report(year, month)
 
     def generate_custom_report(self):
+        """Open dialog to select date range for the custom report."""
         dialog = CustomReportDialog(self)
         if dialog.exec() == QDialog.Accepted:
             start_date, end_date = dialog.get_date_range()
             self.fetch_custom_report(start_date, end_date)
 
     def fetch_monthly_report(self, year, month):
+        """Fetch and display the monthly report data."""
         api_url = "https://personalexpensetrackerreportserviceapi.azure-api.net/api/Report/monthly-summary"
 
         headers = {
@@ -159,6 +155,7 @@ class ReportView(QWidget):
             "month": month
         }
 
+        logger.debug(f"Fetching monthly report for user_id={self.parent.user_id}, year={year}, month={month}")
         try:
             response = requests.get(api_url, headers=headers, params=params)
             if response.status_code == 200:
@@ -170,6 +167,7 @@ class ReportView(QWidget):
             self.show_error(f"Error: {str(e)}")
 
     def fetch_custom_report(self, start_date, end_date):
+        """Fetch and display the custom date range report data."""
         api_url = "https://personalexpensetrackerreportserviceapi.azure-api.net/api/Report/custom-date-range"
 
         headers = {
@@ -182,6 +180,7 @@ class ReportView(QWidget):
             "endDate": end_date.toString("yyyy-MM-dd")
         }
 
+        logger.debug(f"Fetching custom report from {start_date.toString('yyyy-MM-dd')} to {end_date.toString('yyyy-MM-dd')}")
         try:
             response = requests.get(api_url, headers=headers, params=params)
             if response.status_code == 200:
@@ -193,16 +192,17 @@ class ReportView(QWidget):
             self.show_error(f"Error: {str(e)}")
 
     def show_error(self, message):
+        """Display an error message to the user."""
         self.chart_view.setVisible(False)
         self.chart_selector.setVisible(False)
         self.text_report.setVisible(False)
-        self.monthly_diff_label.setVisible(False)  # Hide the difference label on error
+        self.monthly_diff_label.setVisible(False)
 
         error_label = QLabel(message)
         error_label.setStyleSheet("color: red; font-weight: bold;")
         error_label.setAlignment(Qt.AlignCenter)
 
-        # Clear previous layout items except crucial ones
+        # Clear previous non-essential widgets
         for i in reversed(range(self.layout.count())):
             item = self.layout.itemAt(i)
             if item is not None:
@@ -214,10 +214,10 @@ class ReportView(QWidget):
         self.layout.addWidget(error_label)
 
     def display_report_data(self, data, report_type="custom"):
+        """Process and display the fetched report data."""
         self.clear_charts()
 
         if report_type == "monthly":
-            # 月度报告的处理
             income_total = 0.0
             expense_total = 0.0
 
@@ -231,7 +231,6 @@ class ReportView(QWidget):
 
             difference = income_total - expense_total
 
-            # 创建条形图
             bar_set = QBarSet("Amounts")
             bar_set.append([income_total, expense_total])
             bar_set.setColor(QColor("#2196F3"))
@@ -253,7 +252,7 @@ class ReportView(QWidget):
 
             axisY = QValueAxis()
             axisY.setTitleText("Amount")
-            axisY.setLabelFormat("$%.0f")  # 显示美元符号，无小数
+            axisY.setLabelFormat("$%.0f")
             self.monthly_chart.addAxis(axisY, Qt.AlignLeft)
             series_bar.attachAxis(axisY)
 
@@ -267,7 +266,6 @@ class ReportView(QWidget):
             self.chart_view.setChart(self.monthly_chart)
             self.chart_view.setVisible(True)
 
-            # 更新现有的 monthly_diff_label，而不是创建新的标签
             self.monthly_diff_label.setText(
                 f"<span style='font-size:16px; font-weight:bold;'>Difference (Income - Expense): </span>"
                 f"<span style='font-size:16px; color:#FF5722;'>${difference:,.2f}</span>")
@@ -276,125 +274,43 @@ class ReportView(QWidget):
             self.chart_selector.setVisible(False)
             self.text_report.setVisible(False)
 
-
         elif report_type == "custom":
-
-            # 隐藏 monthly_diff_label
-
             self.monthly_diff_label.setVisible(False)
 
-            # 分类处理
-
             income_categories = {}
-
             expense_categories = {}
 
             for txn in data:
-
                 cat = txn.get("category", "Other")
-
                 ttype = txn.get("transactionType", "Expense")
-
                 amt = txn.get("amount", 0.0)
-
                 if ttype.lower() == "income":
-
                     income_categories[cat] = income_categories.get(cat, 0.0) + amt
-
                 else:
-
                     expense_categories[cat] = expense_categories.get(cat, 0.0) + amt
 
-            # 排序
-
             income_categories = dict(sorted(income_categories.items(), key=lambda item: item[1], reverse=True))
-
             expense_categories = dict(sorted(expense_categories.items(), key=lambda item: item[1], reverse=True))
 
-            # 只显示前3个分类
-
-            def top_3_dict(orig_dict):
-
-                return dict(list(orig_dict.items())[:3])
-
-            top_income = top_3_dict(income_categories)
-
-            top_expense = top_3_dict(expense_categories)
-
-            # 使用HTML设置字体大小和样式
-
-            def dict_to_html(d, title):
-                lines = [f"<h2 style='color:#3F51B5; font-size:18px; margin-bottom:4px;'>{title}:</h2>"]  # 调整标题的下边距
-                lines.append("<ul style='font-size:16px; line-height:1.6; margin-top:2px;'>")  # 调整列表的上边距
-                for k, v in d.items():
-                    lines.append(f"<li><strong>{k}:</strong> <span style='color:#4CAF50;'>${v:,.0f}</span></li>")
-                lines.append("</ul>")
-                return "\n".join(lines)
-
-            # 构建完整的HTML文本
+            top_income = self.top_n_dict(income_categories, 3)
+            top_expense = self.top_n_dict(expense_categories, 3)
 
             full_text = f"""
-
             <div style='font-family:Helvetica, Arial, sans-serif; padding:10px;'>
-
-                {dict_to_html(income_categories, "All Income Categories")}
-
-                {dict_to_html(expense_categories, "All Expense Categories")}
-
+                {self.dict_to_html(income_categories, "All Income Categories")}
+                {self.dict_to_html(expense_categories, "All Expense Categories")}
             </div>
-
             """
 
-            self.text_report.setHtml(full_text)  # 仅使用 setHtml 设置内容
+            self.text_report.setHtml(full_text)
 
-            # 创建收入和支出的条形图
-            def create_bar_chart(title, cat_dict):
-                categories = list(cat_dict.keys())
-                values = list(cat_dict.values())
+            self.income_chart = self.create_bar_chart("Distribution by Income Category", top_income)
+            self.expense_chart = self.create_bar_chart("Distribution by Expense Category", top_expense)
 
-                bar_set = QBarSet("Distribution")
-                bar_set.append(values)
-                bar_set.setColor(QColor("#FFD700"))
-
-                series = QBarSeries()
-                series.append(bar_set)
-
-                chart = QChart()
-                chart.addSeries(series)
-                chart.setTitle(title)
-                chart.setAnimationOptions(QChart.SeriesAnimations)
-                chart.setTheme(QChart.ChartThemeBlueCerulean)
-
-                axisX = QBarCategoryAxis()
-                axisX.append(categories)
-                chart.addAxis(axisX, Qt.AlignBottom)
-                series.attachAxis(axisX)
-
-                axisY = QValueAxis()
-                axisY.setTitleText("Amount")
-                axisY.setLabelFormat("$%.0f")  # 显示美元符号
-                axisY.setTickCount(10)
-                chart.addAxis(axisY, Qt.AlignLeft)
-                series.attachAxis(axisY)
-
-                legend = chart.legend()
-                legend.setVisible(True)
-                legend.setAlignment(Qt.AlignBottom)
-                legend.setFont(QFont("Arial", 10, QFont.Bold))
-                legend.setLabelColor("white")
-                legend.setMarkerShape(QLegend.MarkerShapeRectangle)
-
-                return chart
-
-            self.income_chart = create_bar_chart("Distribution by Income Category", top_income)
-            self.expense_chart = create_bar_chart("Distribution by Expense Category", top_expense)
-
-            # 默认显示收入图表
             self.chart_view.setChart(self.income_chart)
             self.chart_view.setRenderHint(QPainter.Antialiasing)
             self.chart_view.setVisible(True)
 
-            # 设置组合框用于切换图表
             self.chart_selector.clear()
             self.chart_selector.addItem("Income")
             self.chart_selector.addItem("Expense")
@@ -404,35 +320,93 @@ class ReportView(QWidget):
             self.chart_selector.setCurrentIndex(0)
 
             self.text_report.setVisible(False)
+
+    def top_n_dict(self, orig_dict, n):
+        """Return the top n items from a dictionary based on values."""
+        return dict(list(orig_dict.items())[:n])
+
+    def dict_to_html(self, d, title):
+        """Convert a dictionary to an HTML formatted string."""
+        lines = [f"<h2 style='color:#3F51B5; font-size:18px; margin-bottom:4px;'>{title}:</h2>"]
+        lines.append("<ul style='font-size:16px; line-height:1.6; margin-top:2px;'>")
+        for k, v in d.items():
+            lines.append(f"<li><strong>{k}:</strong> <span style='color:#4CAF50;'>${v:,.0f}</span></li>")
+        lines.append("</ul>")
+        return "\n".join(lines)
+
+    def create_bar_chart(self, title, cat_dict):
+        """Create a bar chart for the given category dictionary."""
+        categories = list(cat_dict.keys())
+        values = list(cat_dict.values())
+
+        bar_set = QBarSet("Distribution")
+        bar_set.append(values)
+        bar_set.setColor(QColor("#FFD700"))
+
+        series = QBarSeries()
+        series.append(bar_set)
+
+        chart = QChart()
+        chart.addSeries(series)
+        chart.setTitle(title)
+        chart.setAnimationOptions(QChart.SeriesAnimations)
+        chart.setTheme(QChart.ChartThemeBlueCerulean)
+
+        axisX = QBarCategoryAxis()
+        axisX.append(categories)
+        chart.addAxis(axisX, Qt.AlignBottom)
+        series.attachAxis(axisX)
+
+        axisY = QValueAxis()
+        axisY.setTitleText("Amount")
+        axisY.setLabelFormat("$%.0f")
+        axisY.setTickCount(10)
+        chart.addAxis(axisY, Qt.AlignLeft)
+        series.attachAxis(axisY)
+
+        legend = chart.legend()
+        legend.setVisible(True)
+        legend.setAlignment(Qt.AlignBottom)
+        legend.setFont(QFont("Arial", 10, QFont.Bold))
+        legend.setLabelColor("white")
+        legend.setMarkerShape(QLegend.MarkerShapeRectangle)
+
+        return chart
+
     def switch_chart(self, index):
-        # 0 = Income, 1 = Expense, 2 = All Categories (Text)
+        """Switch between different charts based on user selection."""
         if index == 0 and self.income_chart:
             self.chart_view.setChart(self.income_chart)
             self.chart_view.setVisible(True)
             self.text_report.setVisible(False)
+            logger.debug("Switched to Income chart.")
         elif index == 1 and self.expense_chart:
             self.chart_view.setChart(self.expense_chart)
             self.chart_view.setVisible(True)
             self.text_report.setVisible(False)
+            logger.debug("Switched to Expense chart.")
         elif index == 2:
-            # Show text report
             self.chart_view.setVisible(False)
             self.text_report.setVisible(True)
+            logger.debug("Switched to All Categories text report.")
 
     def clear_charts(self):
+        """Clear all existing charts and reset visibility."""
         self.category_chart = None
         self.type_chart = None
         self.monthly_chart = None
-        # Do not reset monthly_diff_label here
         self.income_chart = None
         self.expense_chart = None
         self.all_categories_text = None
         self.text_report.setVisible(False)
-        # Optionally hide chart view and selector if needed
         self.chart_view.setVisible(False)
         self.chart_selector.setVisible(False)
+        logger.debug("Cleared all charts and reset view.")
+
 
 class MonthlyReportDialog(QDialog):
+    """Dialog for selecting month and year for the monthly report."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Select Month and Year")
@@ -449,13 +423,7 @@ class MonthlyReportDialog(QDialog):
         for i, m in enumerate(month_names, start=1):
             self.month_combo.addItem(m, i)
 
-        # Set current month and year as default
-        for i in range(self.year_combo.count()):
-            if self.year_combo.itemData(i) == current_year:
-                self.year_combo.setCurrentIndex(i)
-                break
-        current_month = QDate.currentDate().month()
-        self.month_combo.setCurrentIndex(current_month - 1)
+        self.set_default_date(current_year)
 
         form_layout = QFormLayout()
         form_layout.addRow("Year:", self.year_combo)
@@ -470,12 +438,25 @@ class MonthlyReportDialog(QDialog):
         main_layout.addWidget(button_box)
         self.setLayout(main_layout)
 
+    def set_default_date(self, current_year):
+        """Set the combo boxes to the current year and month."""
+        for i in range(self.year_combo.count()):
+            if self.year_combo.itemData(i) == current_year:
+                self.year_combo.setCurrentIndex(i)
+                break
+        current_month = QDate.currentDate().month()
+        self.month_combo.setCurrentIndex(current_month - 1)
+
     def get_year_month(self):
+        """Retrieve the selected year and month."""
         year = self.year_combo.currentData()
         month = self.month_combo.currentData()
         return year, month
 
+
 class CustomReportDialog(QDialog):
+    """Dialog for selecting custom date range for the report."""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Select Start and End Dates")
@@ -536,28 +517,33 @@ class CustomReportDialog(QDialog):
         self.setLayout(main_layout)
 
     def set_combo_to_value(self, combo, value):
+        """Set the combo box to the specified value."""
         for i in range(combo.count()):
             if combo.itemData(i) == value:
                 combo.setCurrentIndex(i)
                 break
 
     def update_start_days(self):
+        """Update the day combo box based on selected start year and month."""
         year = self.start_year_combo.currentData()
         month = self.start_month_combo.currentData()
         self.populate_days(self.start_day_combo, year, month)
 
     def update_end_days(self):
+        """Update the day combo box based on selected end year and month."""
         year = self.end_year_combo.currentData()
         month = self.end_month_combo.currentData()
         self.populate_days(self.end_day_combo, year, month)
 
     def populate_days(self, day_combo, year, month):
+        """Populate the day combo box based on year and month."""
         num_days = calendar.monthrange(year, month)[1]
         day_combo.clear()
         for d in range(1, num_days + 1):
             day_combo.addItem(str(d), d)
 
     def get_date_range(self):
+        """Retrieve the selected start and end dates."""
         start_year = self.start_year_combo.currentData()
         start_month = self.start_month_combo.currentData()
         start_day = self.start_day_combo.currentData()
