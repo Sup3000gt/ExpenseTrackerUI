@@ -8,7 +8,7 @@ import locale
 from datetime import datetime
 
 class ContentView(QWidget):
-    def __init__(self, parent,user_id=None, username=None):
+    def __init__(self, parent, user_id=None, username=None):
         print("\n=== Initializing ContentView ===")
         print(f"Creating ContentView with user_id={user_id}, username={username}")
         super().__init__()
@@ -26,7 +26,7 @@ class ContentView(QWidget):
         self.current_page = 1
         self.current_month = "All"
         self.all_transactions = []  # Will hold all transactions once fetched
-        self.grouped_transactions = {}  # Dictionary to hold transactions by month
+        self.grouped_transactions = {}  # Dictionary to hold transactions by month and year
         self.transactions_per_page = 8
 
         self.layout = QVBoxLayout(self)
@@ -120,9 +120,7 @@ class ContentView(QWidget):
 
         # Month filter combo box
         self.month_filter = QComboBox()
-        self.month_filter.addItems(
-            ["All", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
-             "November", "December"])
+        self.month_filter.addItem("All")  # Initialize with "All" only
         self.month_filter.setStyleSheet("padding: 5px; font-size: 14px;")
         self.month_filter.currentTextChanged.connect(self.update_month_filter)
         self.layout.addWidget(self.month_filter)
@@ -325,20 +323,34 @@ class ContentView(QWidget):
             self.fetch_transactions_placeholder.show()  # Show placeholder
 
     def group_by_month(self):
-        """Group all transactions by month name."""
+        """Group all transactions by month and year."""
         self.grouped_transactions.clear()
         # Also create an "All" entry containing all transactions
         self.grouped_transactions["All"] = self.all_transactions
 
         for txn in self.all_transactions:
-            # Parse month from date
+            # Parse month and year from date
             date_str = txn['date'][:10]  # YYYY-MM-DD
             date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            month_name = date_obj.strftime("%B")
+            month_year = date_obj.strftime("%B %Y")  # e.g., "January 2023"
 
-            if month_name not in self.grouped_transactions:
-                self.grouped_transactions[month_name] = []
-            self.grouped_transactions[month_name].append(txn)
+            if month_year not in self.grouped_transactions:
+                self.grouped_transactions[month_year] = []
+            self.grouped_transactions[month_year].append(txn)
+
+        # Update the month_filter ComboBox
+        self.month_filter.blockSignals(True)  # Prevent triggering the update_month_filter signal
+        self.month_filter.clear()
+        self.month_filter.addItem("All")
+
+        # Sort the month_year keys in descending order (latest first)
+        sorted_month_year = sorted(
+            [k for k in self.grouped_transactions.keys() if k != "All"],
+            key=lambda x: datetime.strptime(x, "%B %Y"),
+            reverse=True
+        )
+        self.month_filter.addItems(sorted_month_year)
+        self.month_filter.blockSignals(False)
 
     def display_transactions_for_current_month(self):
         """Display transactions for the currently selected month with pagination."""
@@ -441,6 +453,7 @@ class ContentView(QWidget):
         self.display_transactions_for_current_month()
 
     def update_month_filter(self, month):
+        """Update the displayed transactions based on the selected month and year."""
         self.current_month = month
         self.current_page = 1
         self.display_transactions_for_current_month()
