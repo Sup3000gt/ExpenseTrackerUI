@@ -1,13 +1,17 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout, QCheckBox, QFormLayout
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QLineEdit, QPushButton, QHBoxLayout, QCheckBox, QFormLayout
+)
 from services.auth_service import login_user
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import QLabel
-from PySide6.QtGui import QMovie
-from PySide6.QtCore import QThread, Signal
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QMovie, QPixmap
 import os
 import jwt
 import logging
+
+
+logger = logging.getLogger(__name__)
+
 
 class LoginThread(QThread):
     login_result = Signal(bool, dict, str)  # Signal to send (success, message, token)
@@ -19,32 +23,38 @@ class LoginThread(QThread):
 
     def run(self):
         """Run the API call in a separate thread."""
-        print("LoginThread: Starting API call...")
+        logger.debug("LoginThread: Starting API call...")
         success, response_data, token = login_user(self.username, self.password)
-        print(f"LoginThread: API call result - success: {success}, response_data: {response_data}, token: {token}")
+        logger.debug(
+            f"LoginThread: API call result - success: {success}, response_data: {response_data}, token: {token}"
+        )
         # Ensure response_data is parsed as a dictionary
         if isinstance(response_data, str):
             try:
                 import json
+
                 response_data = json.loads(response_data)
             except json.JSONDecodeError:
                 response_data = {"message": response_data}  # Fallback for non-JSON responses
 
         self.login_result.emit(success, response_data, token)
 
+
 class MainPage(QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        print(f"MainPage initialized with parent: {self.parent}")
+        logger.debug(f"MainPage initialized with parent: {self.parent}")
         self.layout = QVBoxLayout(self)
         self.layout.setSpacing(20)
         self.layout.setContentsMargins(40, 40, 40, 40)
 
         # Title with word wrapping
         self.title_label = QLabel("Personal Expense Tracker")
-        self.title_label.setAlignment(Qt.AlignCenter)  # Center-align horizontally
-        self.title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #555; text-align: center;")
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet(
+            "font-size: 24px; font-weight: bold; color: #555; text-align: center;"
+        )
         self.layout.addWidget(self.title_label)
 
         # Form layout for aligned inputs
@@ -59,7 +69,9 @@ class MainPage(QWidget):
         self.username_input.setFixedSize(260, 40)  # Fixed size for the username input box
         self.username_input.setStyleSheet("padding: 10px; font-size: 14px; border-radius: 8px;")
         username_label = QLabel("Username:")
-        username_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #555; text-align: center;")
+        username_label.setStyleSheet(
+            "font-size: 16px; font-weight: bold; color: #555; text-align: center;"
+        )
         form_layout.addRow(username_label, self.username_input)
 
         # Connect the returnPressed signal to move focus to password_input
@@ -80,7 +92,9 @@ class MainPage(QWidget):
         password_input_layout.addWidget(self.show_password_checkbox)
 
         password_label = QLabel("Password:")
-        password_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #555; text-align: center;")
+        password_label.setStyleSheet(
+            "font-size: 16px; font-weight: bold; color: #555; text-align: center;"
+        )
         form_layout.addRow(password_label, password_input_layout)
 
         # Connect the returnPressed signal to trigger login
@@ -91,28 +105,36 @@ class MainPage(QWidget):
 
         # Login button
         self.login_button = QPushButton("Login")
-        self.login_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #5cb85c; color: white; border-radius: 8px;")
+        self.login_button.setStyleSheet(
+            "padding: 10px; font-size: 18px; background-color: #5cb85c; color: white; border-radius: 8px;"
+        )
         self.login_button.setFixedWidth(400)
         self.login_button.clicked.connect(self.login_user)
         self.layout.addWidget(self.login_button, alignment=Qt.AlignCenter)
 
         # Register button
         self.register_button = QPushButton("Register")
-        self.register_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #0275d8; color: white; border-radius: 8px;")
+        self.register_button.setStyleSheet(
+            "padding: 10px; font-size: 18px; background-color: #0275d8; color: white; border-radius: 8px;"
+        )
         self.register_button.setFixedWidth(400)
         self.register_button.clicked.connect(self.parent.show_register_view)
         self.layout.addWidget(self.register_button, alignment=Qt.AlignCenter)
 
         # Forgot Password button
         self.forgot_password_button = QPushButton("Forgot Password")
-        self.forgot_password_button.setStyleSheet("padding: 10px; font-size: 18px; background-color: #f0ad4e; color: white; border-radius: 8px;")
+        self.forgot_password_button.setStyleSheet(
+            "padding: 10px; font-size: 18px; background-color: #f0ad4e; color: white; border-radius: 8px;"
+        )
         self.forgot_password_button.setFixedWidth(400)
         self.forgot_password_button.clicked.connect(self.parent.show_forgot_password_view)
         self.layout.addWidget(self.forgot_password_button, alignment=Qt.AlignCenter)
 
         # Feedback label
         self.feedback_label = QLabel("")
-        self.feedback_label.setStyleSheet("font-size: 18px; font-weight: bold; color: red; text-align: center;")
+        self.feedback_label.setStyleSheet(
+            "font-size: 18px; font-weight: bold; color: red; text-align: center;"
+        )
         self.layout.addWidget(self.feedback_label)
 
         # Add Microsoft Icon
@@ -123,7 +145,9 @@ class MainPage(QWidget):
 
         # Add Text Below the Icon
         self.text_label = QLabel("Microsoft Software and Systems Academy", self)
-        self.text_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #555; text-align: center;")
+        self.text_label.setStyleSheet(
+            "font-size: 18px; font-weight: bold; color: #555; text-align: center;"
+        )
         self.layout.addWidget(self.text_label, alignment=Qt.AlignCenter)
 
     def focus_password_input(self):
@@ -131,6 +155,7 @@ class MainPage(QWidget):
         self.password_input.setFocus()
 
     def toggle_password_visibility(self, checked):
+        """Toggle the visibility of the password."""
         if checked:
             self.password_input.setEchoMode(QLineEdit.Normal)
         else:
@@ -155,7 +180,9 @@ class MainPage(QWidget):
 
     def on_login_result(self, success, response_data, token):
         """Handle the result of the login API call."""
-        print(f"on_login_result called - success: {success}, response_data: {response_data}, token: {token[:10]}...")
+        logger.debug(
+            f"on_login_result called - success: {success}, response_data: {response_data}, token: {token[:10]}..."
+        )
         self.hide_loading_animation_on_button()
 
         if success:
@@ -169,21 +196,22 @@ class MainPage(QWidget):
             self.feedback_label.setText(error_message)
 
     def get_user_details_from_token(self, token):
+        """Decode JWT token to extract user details."""
         try:
             # Decode the token to extract the payload
             payload = jwt.decode(token, options={"verify_signature": False})
-            logging.debug(f"Decoded JWT payload: {payload}")
+            logger.debug(f"Decoded JWT payload: {payload}")
             user_id = payload.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")
             username = payload.get("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name")
-            logging.debug(f"Extracted user_id: {user_id}, username: {username}")
+            logger.debug(f"Extracted user_id: {user_id}, username: {username}")
             return user_id, username
         except jwt.PyJWTError as e:
-            logging.error(f"Failed to decode JWT token: {e}")
+            logger.error(f"Failed to decode JWT token: {e}")
             return None, None
 
     def show_loading_animation_on_button(self):
-        self.login_button.setText("")
         """Show a spinning icon on the Login button."""
+        self.login_button.setText("")
         # Create a QLabel to hold the spinner
         self.spinner_label = QLabel(self.login_button)
         self.spinner_label.setFixedSize(20, 20)  # Set the size of the spinner
@@ -197,10 +225,10 @@ class MainPage(QWidget):
 
         # Load and start the spinner animation
         spinner_path = os.path.join(os.getcwd(), "assets", "spinner.gif")
-        print(f"Spinner GIF Path: {spinner_path}")
+        logger.debug(f"Spinner GIF Path: {spinner_path}")
 
         if not os.path.exists(spinner_path):
-            print("Spinner GIF not found. Please ensure the path is correct.")
+            logger.error("Spinner GIF not found. Please ensure the path is correct.")
         else:
             self.spinner_movie = QMovie(spinner_path)
             self.spinner_label.setMovie(self.spinner_movie)
