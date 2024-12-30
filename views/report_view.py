@@ -7,6 +7,8 @@ from PySide6.QtCharts import QChart, QChartView, QLegend, QBarCategoryAxis, QBar
 from PySide6.QtGui import QPainter, QColor, QFont, QIcon
 import calendar
 
+import appconfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -143,7 +145,7 @@ class ReportView(QWidget):
 
     def fetch_monthly_report(self, year, month):
         """Fetch and display the monthly report data."""
-        api_url = "https://personalexpensetrackerreportserviceapi.azure-api.net/api/Report/monthly-summary"
+        api_url = appconfig.REPORT_MONTHLY_SUMMARY_URL
 
         headers = {
             "Authorization": f"Bearer {self.parent.jwt_token}",
@@ -168,7 +170,7 @@ class ReportView(QWidget):
 
     def fetch_custom_report(self, start_date, end_date):
         """Fetch and display the custom date range report data."""
-        api_url = "https://personalexpensetrackerreportserviceapi.azure-api.net/api/Report/custom-date-range"
+        api_url = appconfig.REPORT_CUSTOM_RANGE_URL
 
         headers = {
             "Authorization": f"Bearer {self.parent.jwt_token}",

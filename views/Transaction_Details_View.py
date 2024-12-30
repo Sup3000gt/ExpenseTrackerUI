@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
     QScrollArea, QGridLayout, QWidget
 )
 
+import appconfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -181,7 +183,7 @@ class TransactionDetailsView(QWidget):
 
     def delete_transaction(self, transaction_id):
         """Send a DELETE request to remove the transaction."""
-        url = f"https://expensetransactionserviceapi.azure-api.net/api/Transactions/{transaction_id}"
+        url = f"{appconfig.TRANSACTION_DELETE_URL}/{transaction_id}"
         headers = {
             "Authorization": f"Bearer {self.parent.jwt_token}",
             "Ocp-Apim-Subscription-Key": self.parent.subscription_key

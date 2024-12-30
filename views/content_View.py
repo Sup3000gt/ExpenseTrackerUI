@@ -10,6 +10,8 @@ import os
 import locale
 from datetime import datetime
 
+import appconfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -283,7 +285,7 @@ class ContentView(QWidget):
             logger.error("User information is missing.")
             return
 
-        api_url = f"https://expensetransactionserviceapi.azure-api.net/api/Transactions/user/{self.user_id}"
+        api_url = appconfig.TRANSACTION_USER_URL.format(user_id=self.user_id)
 
         headers = {
             "Authorization": f"Bearer {self.jwt_token}",

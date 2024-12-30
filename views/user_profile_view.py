@@ -9,6 +9,8 @@ from PySide6.QtWidgets import (
     QSpacerItem, QSizePolicy
 )
 
+import appconfig
+
 logger = logging.getLogger(__name__)
 
 
@@ -181,7 +183,7 @@ class UserProfileView(QWidget):
     def fetch_user_profile(self):
         """Retrieve and display the user's profile information."""
         self.reset_fields_state()
-        api_url = "https://expenseuserserviceapi.azure-api.net/api/Users/profile"
+        api_url = appconfig.USER_PROFILE_URL
         headers = {"Authorization": f"Bearer {self.parent.jwt_token}"}
         params = {"username": self.parent.username}
 
@@ -223,7 +225,7 @@ class UserProfileView(QWidget):
             return
 
         payload = {"username": self.fields["Username"].text(), "newPassword": new_password}
-        api_url = "https://expenseuserserviceapi.azure-api.net/api/Users/change-password"
+        api_url = appconfig.USER_PASSWORD_CHANGE_URL
         headers = {"Authorization": f"Bearer {self.parent.jwt_token}"}
 
         logger.debug("Submitting password change.")

@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEd
     QMessageBox, QTextEdit, QDialog
 from PySide6.QtCore import Qt, QDate, QLocale, Signal
 
+import appconfig
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +169,7 @@ class AddTransactionView(QWidget):
             "category": self.category_combobox.currentText()
         }
 
-        api_url = "https://expensetransactionserviceapi.azure-api.net/api/Transactions/add"
+        api_url = appconfig.TRANSACTION_ADD_URL
         headers = {
             "Authorization": f"Bearer {self.parent.jwt_token}",
             "Ocp-Apim-Subscription-Key": self.parent.subscription_key
